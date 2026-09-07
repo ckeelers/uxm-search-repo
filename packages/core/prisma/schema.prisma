@@ -1,0 +1,143 @@
+// searchexperience — data model
+// Mirrors plans/implementation-plan.md §3. Change the plan and the schema together.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Platform {
+  GREENHOUSE
+  LEVER
+  ASHBY
+  WORKDAY
+  GENERIC
+}
+
+enum Track {
+  UX_DESIGN_MGR
+  UX_RESEARCH_MGR
+}
+
+enum MatchOutcome {
+  STAGE1_INCLUDE
+  STAGE2_INCLUDE
+  REVIEW_QUEUE
+  REJECTED
+}
+
+enum SiteArrangement {
+  ONSITE
+  HYBRID
+  UNKNOWN
+}
+
+enum RemoteScope {
+  ANYWHERE_US
+  STATE_LIST
+}
+
+enum SalaryState {
+  STATED
+  UNKNOWN
+}
+
+enum JobStatus {
+  OPEN
+  CLOSED
+}
+
+enum SavedStatus {
+  SAVED
+  APPLIED
+  ARCHIVED
+}
+
+model Company {
+  id         String     @id @default(cuid())
+  name       String
+  slug       String     @unique
+  platform   Platform
+  platformId String? // e.g. Greenhouse board token "stripe"
+  careersUrl String
+  active     Boolean    @default(true)
+  excluded   Boolean    @default(false) // current employer / conflict — never crawl, never surface
+  notes      String?
+  createdAt  DateTime   @default(now())
+  jobs       Job[]
+  crawlRuns  CrawlRun[]
+}
+
+model Job {
+  id              String       @id @default(cuid())
+  company         Company      @relation(fields: [companyId], references: [id])
+  companyId       String
+  externalId      String // platform's job id
+  sourceUrl       String // direct apply link on the company's own page
+
+  rawTitle        String
+  normalizedTitle String
+  track           Track? // null while REVIEW_QUEUE / REJECTED
+  matchOutcome    MatchOutcome
+  matchReason     String? // why rejected, or why borderline
+
+  descriptionText String       @db.Text
+
+  // location — two independent facets (a job can be sited AND US-remote at once)
+  siteStates      String[] // 2-letter worksite states; empty if purely remote
+  siteArrangement SiteArrangement?
+  remoteUs        Boolean      @default(false)
+  remoteScope     RemoteScope? // only when remoteUs = true
+  remoteStates    String[] // 2-letter list when remoteScope = STATE_LIST
+  rawLocationText String?
+
+  salaryState     SalaryState
+  salaryMin       Int? // annualized USD
+  salaryMax       Int?
+  salaryMidpoint  Int?
+  compRawText     String?
+
+  datePosted      DateTime? // from the posting, if stated
+  firstSeen       DateTime     @default(now())
+  lastVerified    DateTime     @default(now())
+  status          JobStatus    @default(OPEN)
+  missedCrawls    Int          @default(0)
+  closedAt        DateTime?
+
+  savedJobs       SavedJob[]
+
+  @@unique([companyId, externalId])
+  @@index([status, track])
+  @@index([status, siteArrangement])
+  @@index([datePosted])
+}
+
+model SavedJob {
+  id        String      @id @default(cuid())
+  job       Job         @relation(fields: [jobId], references: [id])
+  jobId     String
+  userId    String      @default("owner")
+  status    SavedStatus @default(SAVED)
+  notes     String?
+  savedAt   DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([jobId, userId])
+}
+
+model CrawlRun {
+  id         String    @id @default(cuid())
+  company    Company?  @relation(fields: [companyId], references: [id])
+  companyId  String?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  jobsSeen   Int       @default(0)
+  jobsNew    Int       @default(0)
+  jobsClosed Int       @default(0)
+  errorText  String?
+}

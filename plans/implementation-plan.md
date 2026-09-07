@@ -1,0 +1,368 @@
+# Implementation Plan: searchexperience
+
+> **Status:** Approved — Gate 2 of 3 passed
+> **Phase:** Implementation (Gate 3) — M0 in progress
+> **Spec:** [`specs/product-spec.md`](../specs/product-spec.md) (approved 2026-09-06)
+> **Last updated:** 2026-09-06
+
+---
+
+## 1. Stack
+
+| Concern | Choice | Why |
+|---|---|---|
+| Language | TypeScript everywhere | One language front to back; closest to the portfolio's React/TS. |
+| Web app | Next.js (App Router) | Search UI, saved jobs, and a small internal `/admin` in one deploy. |
+| ORM / DB | Prisma + PostgreSQL (Railway managed) | Typed queries, migrations, one managed database. |
+| Crawler | Separate Node/TS worker service | Long scrape jobs don't belong in a web request; run on a schedule. |
+| Shared logic | `packages/core` | Title taxonomy, salary parser, location classifier, Prisma client, types — used by **both** web and worker, tested in one place. |
+| Styling | Tailwind CSS, mobile-first | Matches the portfolio; no component library needed for v1. |
+| Tests | Vitest, in `packages/core` | The taxonomy / salary / location logic is the highest correctness risk — that's what gets tested. |
+| Auth (v1) | None for the public site. `/admin` behind HTTP basic auth (env vars). Saved jobs use a hardcoded `userId = "owner"`. | Spec: v1 is single-user, no accounts. |
+
+---
+
+## 2. Repo layout (pnpm workspaces monorepo)
+
+```
+searchexperience/
+  apps/
+    web/                Next.js app — search, saved, admin
+    worker/             crawl runner — cron entrypoint + per-platform adapters
+  packages/
+    core/
+      prisma/schema.prisma
+      src/
+        db.ts           Prisma client singleton
+        taxonomy.ts     normalizeTitle, matchTitle (Stage 1), contentCheck (Stage 2)
+        salary.ts       parseCompensation -> annualized USD min/max/midpoint
+        location.ts     classifyLocation -> arrangement + remote scope/states
+        types.ts
+      src/*.test.ts
+  specs/
+  plans/
+```
+
+Plain pnpm workspaces (no Turborepo for v1 — revisit if builds get slow).
+
+---
+
+## 3. Data model (Prisma)
+
+```prisma
+enum Platform        { GREENHOUSE  LEVER  ASHBY  WORKDAY  GENERIC }
+enum Track           { UX_DESIGN_MGR  UX_RESEARCH_MGR }
+enum MatchOutcome    { STAGE1_INCLUDE  STAGE2_INCLUDE  REVIEW_QUEUE  REJECTED }
+enum SiteArrangement { ONSITE  HYBRID  UNKNOWN }   // in-office expectation for a physical worksite
+enum RemoteScope     { ANYWHERE_US  STATE_LIST }
+enum SalaryState     { STATED  UNKNOWN }
+enum JobStatus       { OPEN  CLOSED }
+enum SavedStatus     { SAVED  APPLIED  ARCHIVED }
+
+model Company {
+  id         String     @id @default(cuid())
+  name       String
+  slug       String     @unique
+  platform   Platform
+  platformId String?    // e.g. Greenhouse board token "stripe"
+  careersUrl String
+  active     Boolean    @default(true)
+  excluded   Boolean    @default(false)  // current employer / conflict — never crawl, never surface
+  notes      String?
+  createdAt  DateTime   @default(now())
+  jobs       Job[]
+  crawlRuns  CrawlRun[]
+}
+
+model Job {
+  id              String          @id @default(cuid())
+  company         Company         @relation(fields: [companyId], references: [id])
+  companyId       String
+  externalId      String          // platform's job id
+  sourceUrl       String          // direct apply link on the company's page
+
+  rawTitle        String
+  normalizedTitle String
+  track           Track?          // null while REVIEW_QUEUE / REJECTED
+  matchOutcome    MatchOutcome
+  matchReason     String?         // why rejected, or why borderline
+
+  descriptionText String          @db.Text
+
+  // --- location: a job can be BOTH sited in one or more states AND US-remote at once ---
+  siteStates      String[]        // 2-letter worksite states, e.g. ["CO","NY","CA"]; empty if purely remote
+  siteArrangement SiteArrangement? // ONSITE | HYBRID | UNKNOWN — in-office expectation for those sites
+  remoteUs        Boolean         @default(false)  // a US-remote option is offered
+  remoteScope     RemoteScope?    // only when remoteUs = true
+  remoteStates    String[]        // 2-letter list when remoteScope = STATE_LIST
+  rawLocationText String?         // original location string, always kept
+
+  salaryState     SalaryState
+  salaryMin       Int?            // annualized USD
+  salaryMax       Int?
+  salaryMidpoint  Int?
+  compRawText     String?
+
+  datePosted      DateTime?       // from the posting, if stated
+  firstSeen       DateTime        @default(now())
+  lastVerified    DateTime        @default(now())
+  status          JobStatus       @default(OPEN)
+  missedCrawls    Int             @default(0)
+  closedAt        DateTime?
+
+  savedJobs       SavedJob[]
+
+  @@unique([companyId, externalId])
+  @@index([status, track])
+  @@index([datePosted])
+}
+
+model SavedJob {
+  id        String      @id @default(cuid())
+  job       Job         @relation(fields: [jobId], references: [id])
+  jobId     String
+  userId    String      @default("owner")
+  status    SavedStatus @default(SAVED)
+  notes     String?
+  savedAt   DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([jobId, userId])
+}
+
+model CrawlRun {
+  id         String    @id @default(cuid())
+  company    Company?  @relation(fields: [companyId], references: [id])
+  companyId  String?
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+  jobsSeen   Int       @default(0)
+  jobsNew    Int       @default(0)
+  jobsClosed Int       @default(0)
+  errorText  String?
+}
+```
+
+Notes:
+- **Rejected jobs are stored** (`matchOutcome = REJECTED`, `matchReason` set) from M1 on — cheap, and the only way to tune the taxonomy against real data.
+- `CLOSE_AFTER_MISSED_CRAWLS` (default **2** — ~48h at daily cadence) controls when an unseen job flips to `CLOSED`.
+- **Excluded companies** (`excluded = true`) are skipped by the crawler entirely and never appear in results. **Amazon is excluded** (the builder's current employer). `/admin/companies` shows excluded rows greyed so one isn't re-added by accident.
+- **Location is two independent facets, not one enum.** A posting can be sited in several states *and* offer US-remote at the same time (real: Gusto lists 3 hybrid offices; Pinterest lists "San Francisco, CA, US; Remote, US"). Hence `siteStates String[]` + `siteArrangement` for the physical side, and `remoteUs` / `remoteScope` / `remoteStates` for the remote side. `siteStates` needs a **GIN index** for `= ANY(...)` state filtering; add `@@index([status, siteArrangement])` too.
+
+---
+
+## 4. Domain logic (`packages/core`)
+
+### 4.1 `taxonomy.ts`
+- `normalizeTitle(raw): string` — lowercase, collapse punctuation, strip seniority/scope modifiers (`senior`, `sr`, `lead`, `group`, `staff`, `principal`), strip location / org / req-id suffixes, un-invert comma forms.
+- `matchTitle(normalized): { outcome: 'STAGE1_INCLUDE' | 'REVIEW_QUEUE' | 'REJECTED', track?, reason? }`
+  1. Disqualifier hit without a design/UX qualifier → `REJECTED`.
+  2. Discipline token **and** leadership token present → `STAGE1_INCLUDE` + `track`.
+  3. Borderline pattern (`design manager` with no UX/product qualifier, `ux product manager`) → `REVIEW_QUEUE`.
+  4. Else → `REJECTED`.
+- `contentCheck(descriptionText): { score: number, decision: 'auto-include' | 'review' | 'reject' }` — Stage 2, scans for corroborating vs anti-signal phrases (lists from the spec).
+- Exported constants: `DISQUALIFIERS`, `DISCIPLINE_TOKENS`, `LEADERSHIP_TOKENS`, `BORDERLINE_PATTERNS`, `CORROBORATING_SIGNALS`, `ANTI_SIGNALS`.
+
+### 4.2 `salary.ts`
+- `parseCompensation(text): { state, min?, max?, midpoint?, raw }`
+- Handles `$150,000–$180,000`, `$272,000 to $306,000`, `150k-180k`, single value, bare consecutive figures split across markup, `$72/hr` (×2080), `$12,500/mo` (×12); **postings with multiple bands** (real: Gusto lists two zone bands in one posting) → extract all, take the **lowest**; non-USD → `UNKNOWN`; sanity bounds $30k–$1M else `UNKNOWN`. (Formats confirmed against live Greenhouse data — see [`m1-seed-companies.md`](./m1-seed-companies.md).)
+- `midpoint = round((min + max) / 2)`, or the single value.
+- Pipeline rule: `STATED` and `midpoint < 150_000` → drop (store as `REJECTED`, reason `below-threshold`). `UNKNOWN` → keep.
+
+### 4.3 `location.ts`
+```ts
+classifyLocation(rawLocationText: string, descriptionText: string): {
+  isUsBased: boolean;          // false -> caller drops the job (spec: US-based only)
+  siteStates: string[];        // 2-letter worksite states (may be several; empty if purely remote)
+  siteArrangement: 'ONSITE' | 'HYBRID' | 'UNKNOWN';
+  remoteUs: boolean;           // a US-remote option is offered
+  remoteScope?: 'ANYWHERE_US' | 'STATE_LIST';
+  remoteStates?: string[];     // when STATE_LIST
+}
+```
+- A single posting can be **both** sited and remote — so the result carries the site facet and the remote facet independently, not one `arrangement` enum.
+- **Parsing:** split `rawLocationText` on `;` into parts (real values are semicolon-delimited multi-location with embedded arrangement words, e.g. `"Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid"`). For each part:
+  - `remote` keyword → set `remoteUs = true`; otherwise add its state to `siteStates`.
+  - `hybrid` / `onsite` keyword → contributes to `siteArrangement` (HYBRID wins over ONSITE if parts disagree; UNKNOWN if no part says).
+  - extract the state: 2-letter code, full state name (`"New York, New York"`), or metro→state map (`"San Francisco Bay Area"` → CA).
+- **Remote scope:** if `remoteUs`, scan `descriptionText` for `"must reside in" / "open to residents of X, Y" / "cannot hire in ..."` → `STATE_LIST` (+ `remoteStates`), else `ANYWHERE_US`.
+- **US check:** any non-US location with no US part → `isUsBased = false`.
+- Real `rawLocationText` samples are in [`m1-seed-companies.md`](./m1-seed-companies.md) and seed the Vitest suite.
+
+Each of the three modules ships with a Vitest suite covering the spec's worked examples before it's wired into the pipeline.
+
+---
+
+## 5. Crawler (`apps/worker`)
+
+### 5.1 Adapter interface
+```ts
+interface Adapter {
+  platform: Platform;
+  listJobs(company: Company): Promise<RawJob[]>;
+}
+type RawJob = {
+  externalId: string;
+  url: string;
+  title: string;
+  descriptionText: string;
+  locationText?: string;
+  compText?: string;
+  datePosted?: Date;
+};
+```
+
+### 5.2 Adapters (one per platform — many companies each)
+| Adapter | Source | Milestone |
+|---|---|---|
+| `greenhouse` | `GET https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true` (JSON — the company's own board). Field mapping + real-data quirks verified 2026-09-06, see [`m1-seed-companies.md`](./m1-seed-companies.md). `datePosted` ← `first_published`; `sourceUrl` ← `absolute_url` (host varies per company, pass through). | M1 |
+| `lever` | `GET https://api.lever.co/v0/postings/{company}?mode=json` | M4 |
+| `ashby` | `POST https://api.ashbyhq.com/posting-api/job-board/{name}` | M4 |
+| `workday` | per-tenant `POST /wday/cxs/{tenant}/{site}/jobs`; Playwright fallback (needs a Dockerfile for browser deps) | M4 |
+| `generic` | cheerio + heuristics; lowest priority | later |
+
+All requests use a polite `CRAWL_USER_AGENT` (identifies the project + a contact) and a conservative rate limit.
+
+### 5.3 Pipeline (`src/crawl.ts`) — idempotent, re-runnable
+```
+for each Company where active = true and excluded = false:
+  open CrawlRun
+  raw = adapter.listJobs(company)
+  seen = []
+  for each r in raw:
+    loc = classifyLocation(r.locationText, r.descriptionText)
+    if not loc.isUsBased                        -> skip
+    normalized = normalizeTitle(r.title)
+    m = matchTitle(normalized)
+    if m.outcome == REJECTED                    -> upsert Job(REJECTED, reason); continue
+    if m.outcome == REVIEW_QUEUE:
+       c = contentCheck(r.descriptionText)
+       outcome = c.decision == 'auto-include' ? STAGE2_INCLUDE
+               : c.decision == 'reject'       ? REJECTED
+               :                                 REVIEW_QUEUE
+    comp = parseCompensation(r.compText ?? r.descriptionText)
+    if comp.state == STATED and comp.midpoint < 150000 -> upsert Job(REJECTED, 'below-threshold'); continue
+    upsert Job by (companyId, externalId)  [writing loc.siteStates / loc.siteArrangement / loc.remoteUs / loc.remoteScope / loc.remoteStates]:
+       create -> firstSeen=now, lastVerified=now, datePosted=r.datePosted, missedCrawls=0, status=OPEN
+       update -> lastVerified=now, missedCrawls=0, refresh mutable fields, keep firstSeen
+    seen.push(externalId)
+  # reconcile — ONLY when the fetch succeeded
+  if adapter fetch returned a 403 / 429 / bot-challenge or threw:
+     record CrawlRun.errorText, leave every existing Job untouched (no missedCrawls bump), move to next company
+  else:
+     for each Job where companyId, status=OPEN, externalId NOT IN seen:
+        missedCrawls++ ; if missedCrawls >= CLOSE_AFTER_MISSED_CRAWLS -> status=CLOSED, closedAt=now
+  close CrawlRun (counts)
+```
+
+A block therefore degrades one company's data freshness (its jobs stop refreshing, `lastVerified` stops advancing) but never wrongly closes them — the operator has days to react via `/admin`.
+
+### 5.4 Schedule
+Railway cron on the `worker` service, `0 8 * * *` (daily 08:00 UTC). Entry point `pnpm --filter @searchexperience/worker start`, which runs `src/crawl.ts` via **tsx** (no build step — fine for a short-lived cron job; revisit bundling if cold-start time matters). (Alt considered: GitHub Actions scheduled workflow — keeps scraping load off Railway, also free. Railway cron chosen for a single deploy target; revisit in M4+ if crawler traffic or cost becomes real.)
+
+### 5.5 Runaway-cost guards
+The cron service only bills while the script runs, so the only risk is a hang. Defenses, most important first:
+- **In-script timeouts** — a global run cap (`CRAWL_MAX_RUNTIME_MS`, default 15 min) that force-exits, a per-company cap (~90 s), and a per-HTTP-request cap (~15 s via `AbortController`). The script physically cannot run away regardless of platform behaviour.
+- **No overlapping runs** — the 15-min global cap is far below the 24-h interval; a `CrawlRun` lock row checked on startup is the backstop.
+- **Railway usage cap** — a hard spending limit ($10–15) set in the Railway dashboard; if anything exceeds it Railway stops the services, so worst case is bounded.
+- **Small footprint** — the worker needs minimal RAM until Playwright (M4); Playwright adapters get tighter timeouts and can run on a slower cadence.
+
+---
+
+## 6. Web app (`apps/web`)
+
+| Route | Purpose |
+|---|---|
+| `/` | Search. Reads filter state from URL params (`track`, `arr[]` ⊆ {onsite,hybrid,remote}, `state`, `salary`, `q`), queries Prisma for `status=OPEN` + included jobs, renders cards. Sort: `datePosted` desc (nulls last), then `firstSeen` desc. **Arrangement filter → SQL:** `onsite` checked → `siteArrangement = ONSITE (AND :state = ANY(siteStates) if state set)`; `hybrid` checked → same with `HYBRID`; `remote` checked → `remoteUs = true` (state ignored per spec). The checked clauses are OR'd. With no state set, the `siteStates` condition is dropped. (`siteStates` gets a Postgres GIN index for `= ANY(...)`.) |
+| `/saved` | `SavedJob` for `userId="owner"`, grouped SAVED / APPLIED / ARCHIVED, inline status control + notes. `CLOSED` jobs show a **"No longer listed"** tag. Server actions for mutations. |
+| `/jobs/[id]` | Full detail (added M4; cards carry enough for MVP). |
+| `/admin/review` | `matchOutcome = REVIEW_QUEUE` queue — approve (set `track`, `STAGE2_INCLUDE`) or reject. |
+| `/admin/companies` | CRUD companies (name, slug, platform, platformId, careersUrl, active). |
+| `/admin/crawls` | Recent `CrawlRun` rows + errors. |
+| `middleware.ts` | HTTP basic auth on `/admin/*` via `ADMIN_USER` / `ADMIN_PASS`. |
+
+**Job card:** title · company · track badge · location tags — one per `siteStates` entry with the `siteArrangement` (e.g. "Hybrid · CO, NY, CA"), plus a remote tag when `remoteUs` (`Remote: anywhere (US)` or `State requirements: …` from `remoteStates`) · comp (band as posted, or `Salary unknown / unpublished`) · `Posted {datePosted} · Seen {firstSeen} · Verified {lastVerified}` · `Apply on {company} site ↗` · Save button. A job that is both sited and remote shows both kinds of tag.
+
+---
+
+## 7. Environment & Railway
+
+**Env vars:** `DATABASE_URL`, `ADMIN_USER`, `ADMIN_PASS`, `CLOSE_AFTER_MISSED_CRAWLS` (default 2), `CRAWL_USER_AGENT`, `CRAWL_MAX_RUNTIME_MS` (default 900000).
+
+**Railway usage cap:** set a hard spending limit ($10–15) on the project so a hung crawl or runaway service can't produce a surprise bill.
+
+**Railway services:**
+1. `web` — root `apps/web`; release step `prisma migrate deploy`; start `next start`; health route `/api/health`.
+2. `worker` — root repo root; build `pnpm install --frozen-lockfile && pnpm db:generate`; Cron Schedule `0 8 * * *`; start `pnpm --filter @searchexperience/worker start` (tsx).
+3. PostgreSQL plugin — shared.
+
+---
+
+## 8. Milestones
+
+Each milestone is shippable and leaves the site more useful than before.
+
+### M0 — Skeleton & deploy
+- [x] pnpm monorepo (`apps/web`, `apps/worker`, `packages/core`) — `node-linker=hoisted`, workspace deps wired
+- [x] Next.js 15 + Tailwind 3 app that builds; `/api/health` (liveness + DB probe)
+- [x] Full Prisma schema (with the location facets) + `20260907033336_init` migration (generated offline via `migrate diff`, incl. the `siteStates` GIN index); `@searchexperience/core` exports client + types
+- [x] `worker` scaffold with the runaway guard; loads core + Prisma at runtime, exits clean
+- [x] Vitest wired in `packages/core` (2 wiring tests green)
+- [x] typecheck + `next build` + tests all pass locally
+- [x] `git init` (own repo, nested under the `Documents` repo); `.gitignore` / `.gitattributes`
+- [ ] **Chris:** create GitHub repo + push; Railway project — Postgres + `web` + `worker` per [`../README.md`](../README.md); set usage cap
+- **Done when:** site is live on Railway, DB migrated (`db:deploy`), `/api/health` returns `db: ok`, worker cron runs clean.
+
+### M1 — One source, end to end
+- `taxonomy.ts`: `normalizeTitle` + Stage 1 `matchTitle` + tests (spec examples: "Product Design Manager" in, "Product Manager" out, inverted + seniority forms)
+- `greenhouse` adapter
+- Crawl pipeline: fetch → normalize → Stage 1 → upsert → reconcile (no salary/location yet)
+- Seed 15–20 Greenhouse-hosted mid/large product companies with real UX Manager roles (candidate list assembled and token-verified before M1; **Amazon excluded**)
+- `/` renders a plain list of OPEN + included jobs (title, company, apply link, recency dates)
+- **Done when:** real UX Manager jobs from ≥10 companies are visible on the deployed site.
+
+### M2 — The filters that matter
+- `salary.ts` + tests → wired into pipeline (drop STATED midpoint < $150k; tag UNKNOWN)
+- `location.ts` + tests → wired into pipeline (multi-state `siteStates`, `siteArrangement`, `remoteUs`, STATE_LIST scope, non-US drop) — tests seeded with the real `rawLocationText` samples from `m1-seed-companies.md`
+- Migration adds the location facet columns + GIN index on `siteStates`
+- Search UI: track filter, arrangement checkboxes (≥1 enforced) with the OR'd SQL from §6, optional state select, salary-state filter, keyword box — all URL-driven
+- Job card final form + sort order
+- **Done when:** the spec's worked examples for salary and location all produce correct result sets.
+
+### M3 — Save a job  → **MVP complete**
+- `SavedJob` server actions (save / unsave / status / notes), `userId="owner"`
+- Save button on cards
+- `/saved` page grouped by status with inline controls
+- **Done when:** you can search UX Manager roles and save + revisit them.
+
+### M4 — Breadth & freshness
+- `lever` + `ashby` adapters (+ expand the company list across all platforms)
+- `workday` adapter (per-tenant JSON; Playwright fallback + Dockerfile)
+- FAANG-tier custom adapters where feasible (Meta, Apple, Netflix, Google — **not Amazon**); their bespoke career systems are the reason this is M4, not M1
+- Railway cron live on `worker` (daily)
+- Closed-role reconciliation verified end to end; "No longer listed" on saved
+- Stage 2 `contentCheck` + `/admin/review`; `/admin/companies`; `/admin/crawls`; basic-auth middleware
+- `/jobs/[id]` detail page
+- **Done when:** ≥40 companies across ≥3 platforms, daily auto-crawl, review queue usable.
+
+### M5 — Polish
+- Mobile layout pass; empty / loading / error states
+- Taxonomy-tuning view over `REJECTED` jobs in `/admin`
+- Crawl observability (surface `CrawlRun` errors + summary)
+- README: local setup + "add a company" steps
+- Broaden `packages/core` test coverage
+- **Done when:** comfortable using it as your daily job search.
+
+---
+
+## 9. Decisions (resolved 2026-09-06)
+
+1. **Monorepo tooling** — plain pnpm workspaces, no Turborepo. Revisit only if builds get slow.
+2. **`/admin` auth** — HTTP basic auth via `ADMIN_USER` / `ADMIN_PASS` env vars, over Railway's HTTPS. A real auth library comes with the future multi-user work, not now.
+3. **Crawl host** — Railway cron service on `worker`, daily. Guarded by in-script timeouts, a no-overlap lock, and a Railway usage cap (§5.5). Revisit GitHub Actions in M4+ if crawler traffic/cost grows.
+4. **Detail page timing** — result cards only through M3; `/jobs/[id]` built in M4. Pull forward during M1 only if in-site description reading proves useful.
+5. **Seed company list** — **done**: 20 Greenhouse-hosted companies assembled and token-verified live 2026-09-06, in [`m1-seed-companies.md`](./m1-seed-companies.md) (8 have an in-taxonomy role live today). **Amazon is excluded** (current employer) — enforced by `Company.excluded`, not just omission. FAANG (minus Amazon) confirmed *not* on Greenhouse → M4 custom adapters.
+
+---
+
+*Plan reviewed and approved 2026-09-06. Implementation (Gate 3) begins with M0.*

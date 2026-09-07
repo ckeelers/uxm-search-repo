@@ -1,0 +1,5 @@
+# Normalise line endings — the repo builds on Linux (Railway).
+* text=auto eol=lf
+
+# Binaries / generated lockfiles: leave alone
+pnpm-lock.yaml -diff

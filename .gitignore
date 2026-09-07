@@ -1,0 +1,23 @@
+# dependencies
+node_modules/
+
+# builds
+.next/
+dist/
+out/
+*.tsbuildinfo
+
+# prisma generated client
+packages/core/src/generated/
+
+# env
+.env
+.env.*
+!.env.example
+
+# test
+coverage/
+
+# misc
+.DS_Store
+*.log

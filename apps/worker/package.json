@@ -1,0 +1,20 @@
+{
+  "name": "@searchexperience/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/crawl.ts",
+    "start": "tsx src/crawl.ts",
+    "crawl": "tsx src/crawl.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@searchexperience/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
