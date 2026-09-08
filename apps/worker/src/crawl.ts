@@ -11,6 +11,8 @@ import {
   type Track,
 } from "@searchexperience/core";
 import { greenhouseAdapter } from "./adapters/greenhouse";
+import { leverAdapter } from "./adapters/lever";
+import { ashbyAdapter } from "./adapters/ashby";
 import type { Adapter, RawJob } from "./adapters/types";
 import { isBlock } from "./http";
 
@@ -23,6 +25,8 @@ const SALARY_FLOOR = 150_000; // spec: base-band midpoint must be >= this
 
 const ADAPTERS: Record<string, Adapter> = {
   GREENHOUSE: greenhouseAdapter,
+  LEVER: leverAdapter,
+  ASHBY: ashbyAdapter,
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -96,7 +100,14 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
       matchOutcome === MatchOutcome.STAGE2_INCLUDE ||
       matchOutcome === MatchOutcome.REVIEW_QUEUE;
 
-    if (wouldSurface && !loc.isUsBased) {
+    // a stated non-US country, with nothing US in the location, overrides
+    const nonUsByCountry =
+      r.countryHint != null &&
+      r.countryHint !== "US" &&
+      loc.siteStates.length === 0 &&
+      !loc.remoteUs;
+
+    if (wouldSurface && (!loc.isUsBased || nonUsByCountry)) {
       matchOutcome = MatchOutcome.REJECTED;
       matchReason = "non-us";
       track = null;

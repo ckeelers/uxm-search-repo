@@ -342,14 +342,19 @@ Each milestone is shippable and leaves the site more useful than before.
 - **Done when:** you can search UX Manager roles and save + revisit them. ✓ ← **v1 MVP**
 
 ### M4 — Breadth & freshness
-- `lever` + `ashby` adapters (+ expand the company list across all platforms)
-- `workday` adapter (per-tenant JSON; Playwright fallback + Dockerfile)
-- FAANG-tier custom adapters where feasible (Meta, Apple, Netflix, Google — **not Amazon**); their bespoke career systems are the reason this is M4, not M1
-- Railway cron live on `worker` (daily)
-- Closed-role reconciliation verified end to end; "No longer listed" on saved
-- Stage 2 `contentCheck` + `/admin/review`; `/admin/companies`; `/admin/crawls`; basic-auth middleware
-- `/jobs/[id]` detail page
-- **Done when:** ≥40 companies across ≥3 platforms, daily auto-crawl, review queue usable.
+
+**M4a — Lever + Ashby (done 2026-09-08, code; deploy pending):**
+- [x] `ashby.ts` (structured salary via `summaryComponents`, multi-location join) + `lever.ts` (structured `salaryRange`, `country` → non-US); `RawJob` gains `countryHint`; both registered in `crawl.ts` ADAPTERS and the non-US check.
+- [x] `seed-companies.ts` → **50 companies** — GREENHOUSE 36 / LEVER 2 / ASHBY 12, all verified live.
+- [x] `location.ts` bare-city → state map (also fixes `Washington, DC` → DC). 38 core tests green, typecheck + build clean.
+- [ ] **Chris:** deploy, then `railway ssh` → `seed` + `crawl`, spot-check.
+
+**M4b — `/admin`:** basic-auth middleware; `/admin/companies` CRUD; `/admin/crawls` log; Stage 2 `contentCheck` + `/admin/review` queue.
+**M4c — Railway cron:** flip the `worker` schedule on (daily); verify closed-role reconciliation + "No longer listed" end to end.
+**M4d — `/jobs/[id]`** detail page.
+**M4e — `workday` adapter** (per-tenant JSON; Playwright fallback + Dockerfile). FAANG-minus-Amazon custom adapters are follow-on work after M4e.
+
+- **Done when:** ≥40 companies across ≥3 platforms ✓ (50/3), daily auto-crawl, review queue usable.
 
 ### M5 — Polish
 - Mobile layout pass; empty / loading / error states

@@ -39,7 +39,27 @@ const METROS: Record<string, string> = {
   "greater seattle": "WA", "new york city": "NY", "greater new york": "NY",
   nyc: "NY", "greater boston": "MA", "greater los angeles": "CA",
   "greater chicago": "IL", "washington, d.c.": "DC", "washington dc": "DC",
-  "research triangle": "NC",
+  "washington, dc": "DC", "research triangle": "NC",
+};
+
+// bare city names -> state, for strings like "San Francisco; Remote"
+const CITIES: Record<string, string> = {
+  "san francisco": "CA", "san jose": "CA", oakland: "CA", "palo alto": "CA",
+  "mountain view": "CA", "menlo park": "CA", sunnyvale: "CA", "santa clara": "CA",
+  "san mateo": "CA", "redwood city": "CA", "san diego": "CA", "los angeles": "CA",
+  "santa monica": "CA", "culver city": "CA", irvine: "CA", pasadena: "CA",
+  "new york": "NY", brooklyn: "NY", manhattan: "NY",
+  seattle: "WA", bellevue: "WA", redmond: "WA",
+  austin: "TX", dallas: "TX", houston: "TX", "san antonio": "TX",
+  denver: "CO", boulder: "CO",
+  boston: "MA", cambridge: "MA", somerville: "MA",
+  chicago: "IL", atlanta: "GA",
+  miami: "FL", orlando: "FL", tampa: "FL",
+  philadelphia: "PA", pittsburgh: "PA",
+  phoenix: "AZ", scottsdale: "AZ", tempe: "AZ",
+  "salt lake city": "UT", minneapolis: "MN", detroit: "MI", nashville: "TN",
+  charlotte: "NC", raleigh: "NC", durham: "NC", columbus: "OH",
+  "las vegas": "NV", portland: "OR", "kansas city": "MO", "st. louis": "MO",
 };
 
 const NON_US =
@@ -49,17 +69,22 @@ const US_ONLY = /\b(united states|u\.s\.a?\.?|usa|us|remote)\b/i;
 
 function extractState(part: string): string | null {
   const p = part.toLowerCase().trim();
+
   for (const [metro, st] of Object.entries(METROS)) {
     if (p.includes(metro)) return st;
   }
-  // full state name
+  // an explicit 2-letter code as its own token ("City, ST") — most reliable
+  const codes = part.match(/\b([A-Z]{2})\b/g);
+  if (codes) {
+    for (const code of codes) if (ABBREVS.has(code)) return code;
+  }
+  // spelled-out state name
   for (const [name, abbr] of Object.entries(US_STATES)) {
     if (new RegExp(`\\b${name}\\b`).test(p)) return abbr;
   }
-  // "City, ST" or "... ST ..." — 2-letter code as its own token
-  const m = part.match(/\b([A-Z]{2})\b/g);
-  if (m) {
-    for (const code of m) if (ABBREVS.has(code)) return code;
+  // bare city name
+  for (const [city, st] of Object.entries(CITIES)) {
+    if (new RegExp(`\\b${city.replace(/\./g, "\\.")}\\b`).test(p)) return st;
   }
   return null;
 }

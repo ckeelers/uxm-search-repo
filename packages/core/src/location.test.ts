@@ -76,6 +76,20 @@ describe("classifyLocation — real Greenhouse location strings", () => {
     expect(r.remoteStates.sort()).toEqual(["CA", "NY", "WA"]);
   });
 
+  it("resolves bare city names to a state", () => {
+    expect(loc("San Francisco; Remote; Hybrid")).toMatchObject({
+      siteStates: ["CA"],
+      siteArrangement: "HYBRID",
+      remoteUs: true,
+    });
+    expect(loc("Seattle").siteStates).toEqual(["WA"]);
+    expect(loc("Austin, Texas").siteStates).toEqual(["TX"]);
+  });
+
+  it("Washington, DC resolves to DC, not Washington state", () => {
+    expect(loc("Washington, DC").siteStates).toEqual(["DC"]);
+  });
+
   it("empty location -> least-restrictive default", () => {
     expect(classifyLocation("", "")).toMatchObject({
       isUsBased: true,
