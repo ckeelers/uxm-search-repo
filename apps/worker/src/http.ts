@@ -49,6 +49,7 @@ export function htmlToText(html: string): string {
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
+    .replace(/&(?:ndash|mdash|#8211|#8212);/gi, "-")
     .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(Number(d)))
     .replace(/&[a-z]+;/gi, " ")
     .replace(/[ \t]+/g, " ")

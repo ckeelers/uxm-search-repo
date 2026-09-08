@@ -67,6 +67,17 @@ describe("classifyLocation — real Greenhouse location strings", () => {
     expect(r.isUsBased).toBe(true);
   });
 
+  it("picks up a US-remote option stated only in the description (Figma shape)", () => {
+    const r = loc(
+      "San Francisco, CA • New York, NY • United States",
+      "This is a full-time role that can be held from one of our US hubs or remotely in the United States.",
+    );
+    expect(r.siteStates.sort()).toEqual(["CA", "NY"]);
+    expect(r.remoteUs).toBe(true);
+    expect(r.remoteScope).toBe("ANYWHERE_US");
+    expect(r.isUsBased).toBe(true);
+  });
+
   it("reads a remote state-list out of the description", () => {
     const r = loc(
       "Remote, US",

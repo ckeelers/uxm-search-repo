@@ -361,6 +361,12 @@ Each milestone is shippable and leaves the site more useful than before.
 **M4d — `/jobs/[id]` (done 2026-09-08, code; deploy pending):**
 - [x] Full detail page: title, company, track + location + salary tags, all three dates, full description, Apply + Save. Card titles on `/` and `/saved` now link to it. `notFound()` on a bad id. Typecheck + build green.
 
+**Accuracy fix (2026-09-08, code; deploy pending):** salary & location now read the description body properly.
+- [x] `salary.ts` rewritten — scans the whole posting for $-ranges, prefers ones next to a salary keyword (fixes bands being missed when "salary" appears earlier out of context), handles single labelled figures, bare-pair ranges. 11 tests.
+- [x] `location.ts` — a US-remote option stated only in the description ("US hubs or remotely in the United States") now sets `remoteUs`. `htmlToText` maps en/em-dash entities. 14 tests.
+- [x] Verified live: Figma "Manager, Product Design" → `[CA,NY] ONSITE + Remote(US)`, salary `$204k–$348k` (was Onsite-only / unknown).
+- [ ] **Chris:** deploy + re-crawl to re-classify existing rows.
+
 **M4e — `workday` adapter** (per-tenant JSON; Playwright fallback + Dockerfile). FAANG-minus-Amazon custom adapters are follow-on work after M4e.
 
 - **Done when:** ≥40 companies across ≥3 platforms ✓ (50/3), daily auto-crawl, review queue usable.

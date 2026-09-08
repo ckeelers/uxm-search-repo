@@ -67,6 +67,10 @@ const NON_US =
 
 const US_ONLY = /\b(united states|u\.s\.a?\.?|usa|us|remote)\b/i;
 
+// role can be done remotely from the US, per the description body
+const DESC_REMOTE_US =
+  /(fully[-\s]remote|remote[-\s]first|100%\s*remote|work from anywhere in the (?:us|u\.s\.?|united states)|remotely (?:from|within|in|across) (?:the\s+)?(?:us|u\.s\.?|united states)|remote (?:in|within|from|across) (?:the\s+)?(?:us|u\.s\.?|united states)|hubs? or (?:work )?remotely|or (?:work )?remotely|remote \(us\)|\bus[-\s]remote\b)/i;
+
 function extractState(part: string): string | null {
   const p = part.toLowerCase().trim();
 
@@ -180,6 +184,12 @@ export function classifyLocation(
     } else if (US_ONLY.test(lower)) {
       sawUs = true;
     }
+  }
+
+  // the location string often omits a remote option the description states
+  if (!remoteUs && DESC_REMOTE_US.test(desc)) {
+    remoteUs = true;
+    sawUs = true;
   }
 
   // arrangement: hybrid beats onsite; a physical site with no keyword => onsite

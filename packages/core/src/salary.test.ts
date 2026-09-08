@@ -72,6 +72,25 @@ describe("parseCompensation", () => {
     );
   });
 
+  it("finds the labelled band even when 'salary' is mentioned earlier out of context", () => {
+    const jd =
+      "We offer a competitive salary, equity and great benefits. " +
+      "You'll partner with cross-functional teams. ".repeat(20) +
+      "The Annual Base Salary Range is: $204,000 - $348,000 USD. Equity included.";
+    expect(parseCompensation(jd)).toMatchObject({
+      state: "STATED",
+      min: 204000,
+      max: 348000,
+      midpoint: 276000,
+    });
+  });
+
+  it("reads a single labelled figure when there is no range", () => {
+    expect(parseCompensation("Base salary for this role is $185,000 per year.")).toMatchObject(
+      { state: "STATED", min: 185000, max: 185000, midpoint: 185000 },
+    );
+  });
+
   it("the $150k threshold decision the pipeline will make", () => {
     // midpoint >= 150k -> kept
     expect(mid("Salary range $140,000 - $200,000")).toBe(170000);
