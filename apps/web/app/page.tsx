@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { prisma, MatchOutcome, JobStatus, Track } from "@searchexperience/core";
 import type { Prisma } from "@searchexperience/core";
+import { saveJob, removeSaved } from "./actions";
+import { OWNER_ID } from "../lib/owner";
 
 export const dynamic = "force-dynamic";
 
@@ -86,9 +89,20 @@ export default async function HomePage({
   };
 
   let jobs: Awaited<ReturnType<typeof getJobs>> = [];
+  let savedIds = new Set<string>();
+  let savedCount = 0;
   let error = false;
   try {
-    jobs = await getJobs(where);
+    const [rows, saved] = await Promise.all([
+      getJobs(where),
+      prisma.savedJob.findMany({
+        where: { userId: OWNER_ID },
+        select: { jobId: true },
+      }),
+    ]);
+    jobs = rows;
+    savedIds = new Set(saved.map((s) => s.jobId));
+    savedCount = saved.length;
   } catch {
     error = true;
   }
@@ -102,12 +116,20 @@ export default async function HomePage({
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="mb-6">
-        <h1 className="text-2xl font-semibold tracking-tight">searchexperience</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          UX Manager roles from company career pages — base band midpoint ≥ $150k
-          or unpublished, US only.
-        </p>
+      <header className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">searchexperience</h1>
+          <p className="mt-1 text-sm text-neutral-500">
+            UX Manager roles from company career pages — base band midpoint ≥
+            $150k or unpublished, US only.
+          </p>
+        </div>
+        <Link
+          href="/saved"
+          className="shrink-0 rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
+        >
+          Saved{savedCount ? ` (${savedCount})` : ""}
+        </Link>
       </header>
 
       <form
@@ -221,14 +243,22 @@ export default async function HomePage({
                     {job.rawLocationText ? ` · ${job.rawLocationText}` : ""}
                   </div>
 
-                  <a
-                    href={job.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mt-1 inline-block text-sm text-blue-600 hover:underline"
-                  >
-                    Apply on {job.company.name} site ↗
-                  </a>
+                  <div className="mt-1 flex items-center gap-3">
+                    <a
+                      href={job.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-sm text-blue-600 hover:underline"
+                    >
+                      Apply on {job.company.name} site ↗
+                    </a>
+                    <form action={savedIds.has(job.id) ? removeSaved : saveJob}>
+                      <input type="hidden" name="jobId" value={job.id} />
+                      <button className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+                        {savedIds.has(job.id) ? "★ Saved" : "☆ Save"}
+                      </button>
+                    </form>
+                  </div>
                 </li>
               );
             })}

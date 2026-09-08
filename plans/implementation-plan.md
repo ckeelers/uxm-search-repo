@@ -1,7 +1,7 @@
 # Implementation Plan: searchexperience
 
 > **Status:** Approved — Gate 2 of 3 passed
-> **Phase:** Implementation (Gate 3) — M0 + M1 done, M2 in progress
+> **Phase:** Implementation (Gate 3) — M0–M2 done, M3 (MVP) in progress
 > **Spec:** [`specs/product-spec.md`](../specs/product-spec.md) (approved 2026-09-06)
 > **Last updated:** 2026-09-08
 
@@ -330,14 +330,16 @@ Each milestone is shippable and leaves the site more useful than before.
 - [x] Facet columns + `siteStates` GIN index — already in the M0 migration, no new migration needed.
 - [x] Search UI (`apps/web/app/page.tsx`): keyword, track, state, salary-state, arrangement checkboxes (default all; ≥1 → OR'd SQL per §6), all URL-driven, no-JS GET form. Cards: track badge, site tag (`Hybrid · CO, NY, CA`), remote tag, band or "Salary unknown / unpublished", recency line.
 - [x] Dry-run vs live Greenhouse: 12 M1 includes → **9 keep, 3 drop** (2 Stripe non-US, 1 Lyft Toronto). All real location formats + bands parsed correctly.
-- [ ] **Chris:** deploy, re-run the crawl (re-classifies all rows; the 3 non-US flip to REJECTED), spot-check the filters on the live site.
-- **Done when:** the spec's worked examples for salary and location all produce correct result sets.
+- [x] **Deployed + re-crawled + verified (2026-09-08):** filters work on the live site as designed (state + arrangement, salary, track, keyword).
+- **Done when:** the spec's worked examples for salary and location all produce correct result sets. ✓
 
 ### M3 — Save a job  → **MVP complete**
-- `SavedJob` server actions (save / unsave / status / notes), `userId="owner"`
-- Save button on cards
-- `/saved` page grouped by status with inline controls
-- **Done when:** you can search UX Manager roles and save + revisit them.
+- [x] `apps/web/app/actions.ts` — `"use server"` actions: `saveJob` / `removeSaved` / `setSavedStatus` / `setSavedNotes`, all keyed to `OWNER_ID` (`apps/web/lib/owner.ts`, kept out of the server-actions file). `revalidatePath` on `/` and `/saved`.
+- [x] Home cards get a ☆ Save / ★ Saved toggle (no-JS form action); header shows `Saved (n)` link.
+- [x] `/saved` — grouped SAVED / APPLIED / ARCHIVED; per row: Apply link, status-change buttons, Remove, a notes textarea; `No longer listed` tag when `job.status = CLOSED`.
+- [x] No migration — `SavedJob` table already exists from M0. Typecheck + build green.
+- [ ] **Chris:** deploy, then save/track a couple of roles on the live site.
+- **Done when:** you can search UX Manager roles and save + revisit them. ← **this is the v1 MVP**
 
 ### M4 — Breadth & freshness
 - `lever` + `ashby` adapters (+ expand the company list across all platforms)
