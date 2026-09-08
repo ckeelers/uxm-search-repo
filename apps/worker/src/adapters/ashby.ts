@@ -25,7 +25,13 @@ interface AshbyJob {
   isRemote?: boolean;
   workplaceType?: string;
   publishedAt?: string | null;
-  address?: { postalAddress?: { addressCountry?: string } };
+  address?: {
+    postalAddress?: {
+      addressLocality?: string;
+      addressRegion?: string;
+      addressCountry?: string;
+    };
+  };
   compensation?: AshbyComp | null;
 }
 
@@ -58,16 +64,26 @@ function compText(job: AshbyJob): string | undefined {
 }
 
 function locationText(job: AshbyJob): string {
-  const parts = [job.location, ...(job.secondaryLocations ?? []).map((l) => l.location)]
-    .filter((s): s is string => !!s && s.trim().length > 0)
-    .map((s) => s.trim());
-  if (job.isRemote && !parts.some((p) => /remote/i.test(p))) {
-    parts.push("Remote");
+  const parts: string[] = [];
+  if (job.location?.trim()) parts.push(job.location.trim());
+  for (const s of job.secondaryLocations ?? []) {
+    if (s.location?.trim()) parts.push(s.location.trim());
   }
-  if (job.workplaceType && !parts.some((p) => new RegExp(job.workplaceType!, "i").test(p))) {
+  // the structured address is more reliable than the free-text location
+  const a = job.address?.postalAddress;
+  if (a) {
+    const bits = [a.addressLocality, a.addressRegion, a.addressCountry].filter(Boolean);
+    if (bits.length) parts.push(bits.join(", "));
+  }
+  // `isRemote` is over-broad (true even for HQ roles) — don't trust it.
+  // `workplaceType` is the structured arrangement; keep it as a hint.
+  if (
+    job.workplaceType &&
+    !parts.some((p) => new RegExp(job.workplaceType!, "i").test(p))
+  ) {
     parts.push(job.workplaceType);
   }
-  return parts.join("; ");
+  return [...new Set(parts)].join("; ");
 }
 
 /**

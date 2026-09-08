@@ -365,7 +365,13 @@ Each milestone is shippable and leaves the site more useful than before.
 - [x] `salary.ts` rewritten — scans the whole posting for $-ranges, prefers ones next to a salary keyword (fixes bands being missed when "salary" appears earlier out of context), handles single labelled figures, bare-pair ranges. 11 tests.
 - [x] `location.ts` — a US-remote option stated only in the description ("US hubs or remotely in the United States") now sets `remoteUs`. `htmlToText` maps en/em-dash entities. 14 tests.
 - [x] Verified live: Figma "Manager, Product Design" → `[CA,NY] ONSITE + Remote(US)`, salary `$204k–$348k` (was Onsite-only / unknown).
-- [ ] **Chris:** deploy + re-crawl to re-classify existing rows.
+- [x] **Deployed + re-crawled + confirmed on the live site 2026-09-08** (needed a page refresh after the crawl for the render to catch up).
+
+**Accuracy fix 2 (2026-09-08, code; deploy pending):** onsite-only descriptions now override wrong "remote"/"hybrid" metadata.
+- [x] Ashby adapter: stop trusting `isRemote` (over-broad — true even for HQ roles); use structured `address.postalAddress` for a reliable state.
+- [x] `location.ts`: `saysOnsiteOnly()` — "based in our SF HQ" / "relocation assistance" + HQ / "not a remote role" etc. forces `ONSITE` + kills `remoteUs`, unless the description also explicitly offers remote. 47 core tests.
+- [x] Verified live: OpenAI "Product Design Lead, Growth - Codex" → `CA · ONSITE`, remote cleared (was `Hybrid CA + Remote anywhere US`).
+- [ ] **Chris:** deploy + re-crawl.
 
 **M4e — `workday` adapter** (per-tenant JSON; Playwright fallback + Dockerfile). FAANG-minus-Amazon custom adapters are follow-on work after M4e.
 

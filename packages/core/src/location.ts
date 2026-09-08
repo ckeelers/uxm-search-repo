@@ -71,6 +71,27 @@ const US_ONLY = /\b(united states|u\.s\.a?\.?|usa|us|remote)\b/i;
 const DESC_REMOTE_US =
   /(fully[-\s]remote|remote[-\s]first|100%\s*remote|work from anywhere in the (?:us|u\.s\.?|united states)|remotely (?:from|within|in|across) (?:the\s+)?(?:us|u\.s\.?|united states)|remote (?:in|within|from|across) (?:the\s+)?(?:us|u\.s\.?|united states)|hubs? or (?:work )?remotely|or (?:work )?remotely|remote \(us\)|\bus[-\s]remote\b)/i;
 
+// description explicitly says the role is onsite-only — overrides the metadata
+const ONSITE_ONLY_SIGNALS: RegExp[] = [
+  /\bthis (?:role|position|job) (?:is|will be) (?:fully\s+)?(?:based\s+|located\s+)?(?:on-?site|in[-\s]office)\b/i,
+  /\bon-?site (?:only|role|position)\b/i,
+  /\b(?:must|required to|expected to|need to) (?:work|be) (?:on-?site|in[-\s]office|in (?:the|our) office|from (?:the|our) [a-z .,]{0,25}(?:office|hq|headquarters))\b/i,
+  /\b(?:based|located|role is based) (?:out of |in )(?:our )?[a-z .,]{0,30}\b(?:hq|headquarters)\b/i,
+  /\bremote (?:work )?(?:is )?not (?:available|offered|permitted|an option)\b/i,
+  /\bnot (?:a |an )?(?:fully )?remote (?:role|position|job|opportunity)\b/i,
+  /\bno remote (?:work|option)\b/i,
+];
+
+function saysOnsiteOnly(desc: string): boolean {
+  if (ONSITE_ONLY_SIGNALS.some((re) => re.test(desc))) return true;
+  // relocation assistance next to an HQ/office mention -> onsite expectation
+  return (
+    /\brelocation (?:assistance|support|package|benefits|reimbursement|is (?:available|offered|provided))\b/i.test(
+      desc,
+    ) && /\b(?:hq|headquarters|our [a-z ]{0,20}office)\b/i.test(desc)
+  );
+}
+
 function extractState(part: string): string | null {
   const p = part.toLowerCase().trim();
 
@@ -186,10 +207,18 @@ export function classifyLocation(
     }
   }
 
-  // the location string often omits a remote option the description states
-  if (!remoteUs && DESC_REMOTE_US.test(desc)) {
+  // reconcile the location metadata with what the description body says
+  const descRemote = DESC_REMOTE_US.test(desc);
+  if (!remoteUs && descRemote) {
     remoteUs = true;
     sawUs = true;
+  }
+  // an explicit onsite-only statement overrides "remote"/"hybrid" metadata,
+  // unless the description also explicitly offers remote
+  if (!descRemote && saysOnsiteOnly(desc)) {
+    remoteUs = false;
+    sawHybrid = false;
+    sawOnsite = true;
   }
 
   // arrangement: hybrid beats onsite; a physical site with no keyword => onsite

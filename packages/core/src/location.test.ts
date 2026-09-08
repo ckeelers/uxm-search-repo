@@ -67,6 +67,24 @@ describe("classifyLocation — real Greenhouse location strings", () => {
     expect(r.isUsBased).toBe(true);
   });
 
+  it("an onsite-only description overrides remote/hybrid metadata (OpenAI shape)", () => {
+    const r = loc(
+      "San Francisco; San Francisco, California, United States; Hybrid",
+      "This role is based in our San Francisco HQ. We offer relocation assistance to new employees.",
+    );
+    expect(r.siteStates).toEqual(["CA"]);
+    expect(r.siteArrangement).toBe("ONSITE");
+    expect(r.remoteUs).toBe(false);
+  });
+
+  it("does not force onsite when the description also offers remote", () => {
+    const r = loc(
+      "New York, NY; Hybrid",
+      "Based in our NYC HQ, but this role can also be held remotely in the United States.",
+    );
+    expect(r.remoteUs).toBe(true);
+  });
+
   it("picks up a US-remote option stated only in the description (Figma shape)", () => {
     const r = loc(
       "San Francisco, CA • New York, NY • United States",
