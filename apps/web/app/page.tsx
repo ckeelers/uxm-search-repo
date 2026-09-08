@@ -205,7 +205,12 @@ export default async function HomePage({
               return (
                 <li key={job.id} className="py-4">
                   <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <span className="font-medium">{job.rawTitle}</span>
+                    <Link
+                      href={`/jobs/${job.id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {job.rawTitle}
+                    </Link>
                     <span className="text-neutral-500">· {job.company.name}</span>
                     {job.track && (
                       <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-600">

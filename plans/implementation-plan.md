@@ -356,8 +356,11 @@ Each milestone is shippable and leaves the site more useful than before.
 - [x] `/admin/companies` — list + add + pause/resume + exclude/un-exclude + delete.
 - [x] `/admin/crawls` — last 100 `CrawlRun` rows, errors highlighted.
 - [ ] **Chris:** set `ADMIN_USER` / `ADMIN_PASS` on the `web` service; deploy; re-crawl to populate the queue; work it.
-**M4c — Railway cron:** flip the `worker` schedule on (daily); verify closed-role reconciliation + "No longer listed" end to end.
-**M4d — `/jobs/[id]`** detail page.
+**M4c — Railway cron (Chris, dashboard only):** set the `worker` service's **Cron Schedule** to `0 8 * * *`. No code — the worker already runs the full pipeline and exits clean; reconciliation (`missedCrawls++` → CLOSED) and the `/saved` "No longer listed" tag are already in place and will exercise naturally once the daily crawl runs.
+
+**M4d — `/jobs/[id]` (done 2026-09-08, code; deploy pending):**
+- [x] Full detail page: title, company, track + location + salary tags, all three dates, full description, Apply + Save. Card titles on `/` and `/saved` now link to it. `notFound()` on a bad id. Typecheck + build green.
+
 **M4e — `workday` adapter** (per-tenant JSON; Playwright fallback + Dockerfile). FAANG-minus-Amazon custom adapters are follow-on work after M4e.
 
 - **Done when:** ≥40 companies across ≥3 platforms ✓ (50/3), daily auto-crawl, review queue usable.
