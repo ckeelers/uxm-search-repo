@@ -34,11 +34,7 @@ export async function removeSaved(form: FormData): Promise<void> {
 
 export async function setSavedStatus(form: FormData): Promise<void> {
   const status = form.get("status");
-  if (
-    status !== SavedStatus.SAVED &&
-    status !== SavedStatus.APPLIED &&
-    status !== SavedStatus.ARCHIVED
-  ) {
+  if (status !== SavedStatus.SAVED && status !== SavedStatus.APPLIED) {
     throw new Error("bad status");
   }
   await prisma.savedJob.updateMany({

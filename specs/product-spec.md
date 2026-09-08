@@ -81,7 +81,7 @@ Roles are collected by a **scheduled crawler**, not fetched live when a user sea
 - Each indexed role stores a **first-seen** and a **last-verified** timestamp. Every listing shows "First seen [date] · Last verified [date]".
 - If the posting states its own **date posted**, that date is captured and shown on the listing as well (distinct from first-seen, which is when the crawler first indexed the role). If the posting states no date, only first-seen and last-verified are shown.
 - On each re-crawl, a role still present is re-verified (last-verified updated); a role **absent for N consecutive crawls** is marked **closed** and drops out of default search results.
-- A **closed role a user has saved** stays in that user's saved list, tagged **"No longer listed"** with its last-verified date; the user chooses whether to archive it.
+- A **closed role a user has saved** stays in that user's saved list, tagged **"No longer listed"** with its last-verified date; the user chooses whether to remove it.
 - **Target cadence:** every target company is re-crawled **at least daily**. Exact scheduling, per-site adapters, and crawl-rate limits are planning-phase details.
 
 **Title taxonomy — a two-stage match:**  
@@ -144,7 +144,7 @@ Each role is classified on two axes so these filters apply: **work arrangement**
 **Saved jobs:**  
 A user can save any role and return to it in a later visit. v1 has no login — the app runs with a single implicit user, and saved jobs are stored **server-side in the app's database** (not in the browser), so the list is consistent across devices and browsers.
 
-Each saved entry records the job, the date saved, and a user-changeable status (*saved* → *applied* → *archived*). Saved jobs are keyed to a user id even though v1 has only one user, so account creation can be added later as an additive change rather than a data migration.
+Each saved entry records the job, the date saved, and a user-changeable status (*saved* → *applied*). Saved jobs are keyed to a user id even though v1 has only one user, so account creation can be added later as an additive change rather than a data migration.
 
 ---
 
@@ -215,3 +215,4 @@ Each saved entry records the job, the date saved, and a user-changeable status (
 
 *Spec reviewed and approved 2026-09-06. Proceed to planning (Gate 2).*
 *Amended 2026-09-06 during planning: added the current-employer (Amazon) exclusion.*
+*Amended 2026-09-08 during M3: saved-status set reduced to saved → applied (archived dropped by request).*

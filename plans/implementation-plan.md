@@ -57,7 +57,7 @@ enum SiteArrangement { ONSITE  HYBRID  UNKNOWN }   // in-office expectation for 
 enum RemoteScope     { ANYWHERE_US  STATE_LIST }
 enum SalaryState     { STATED  UNKNOWN }
 enum JobStatus       { OPEN  CLOSED }
-enum SavedStatus     { SAVED  APPLIED  ARCHIVED }
+enum SavedStatus     { SAVED  APPLIED }
 
 model Company {
   id         String     @id @default(cuid())
@@ -274,7 +274,7 @@ The cron service only bills while the script runs, so the only risk is a hang. D
 | Route | Purpose |
 |---|---|
 | `/` | Search. Reads filter state from URL params (`track`, `arr[]` ⊆ {onsite,hybrid,remote}, `state`, `salary`, `q`), queries Prisma for `status=OPEN` + included jobs, renders cards. Sort: `datePosted` desc (nulls last), then `firstSeen` desc. **Arrangement filter → SQL:** `onsite` checked → `siteArrangement = ONSITE (AND :state = ANY(siteStates) if state set)`; `hybrid` checked → same with `HYBRID`; `remote` checked → `remoteUs = true` (state ignored per spec). The checked clauses are OR'd. With no state set, the `siteStates` condition is dropped. (`siteStates` gets a Postgres GIN index for `= ANY(...)`.) |
-| `/saved` | `SavedJob` for `userId="owner"`, grouped SAVED / APPLIED / ARCHIVED, inline status control + notes. `CLOSED` jobs show a **"No longer listed"** tag. Server actions for mutations. |
+| `/saved` | `SavedJob` for `userId="owner"`, grouped SAVED / APPLIED, inline status control + notes + remove. `CLOSED` jobs show a **"No longer listed"** tag. Server actions for mutations. |
 | `/jobs/[id]` | Full detail (added M4; cards carry enough for MVP). |
 | `/admin/review` | `matchOutcome = REVIEW_QUEUE` queue — approve (set `track`, `STAGE2_INCLUDE`) or reject. |
 | `/admin/companies` | CRUD companies (name, slug, platform, platformId, careersUrl, active). |
@@ -336,10 +336,10 @@ Each milestone is shippable and leaves the site more useful than before.
 ### M3 — Save a job  → **MVP complete**
 - [x] `apps/web/app/actions.ts` — `"use server"` actions: `saveJob` / `removeSaved` / `setSavedStatus` / `setSavedNotes`, all keyed to `OWNER_ID` (`apps/web/lib/owner.ts`, kept out of the server-actions file). `revalidatePath` on `/` and `/saved`.
 - [x] Home cards get a ☆ Save / ★ Saved toggle (no-JS form action); header shows `Saved (n)` link.
-- [x] `/saved` — grouped SAVED / APPLIED / ARCHIVED; per row: Apply link, status-change buttons, Remove, a notes textarea; `No longer listed` tag when `job.status = CLOSED`.
-- [x] No migration — `SavedJob` table already exists from M0. Typecheck + build green.
-- [ ] **Chris:** deploy, then save/track a couple of roles on the live site.
-- **Done when:** you can search UX Manager roles and save + revisit them. ← **this is the v1 MVP**
+- [x] `/saved` — grouped SAVED / APPLIED; per row: Apply link, status-change buttons, Remove, a notes textarea; `No longer listed` tag when `job.status = CLOSED`.
+- [x] **Deployed + verified (2026-09-08):** save / remove / status / notes all work on the live site. **v1 MVP met.**
+- [x] Follow-up (2026-09-08): **ARCHIVED status removed** by request — `SavedStatus` is now `{ SAVED, APPLIED }`; migration `20260908050929_drop_archived_saved_status` retargets any ARCHIVED rows to SAVED then rebuilds the enum.
+- **Done when:** you can search UX Manager roles and save + revisit them. ✓ ← **v1 MVP**
 
 ### M4 — Breadth & freshness
 - `lever` + `ashby` adapters (+ expand the company list across all platforms)

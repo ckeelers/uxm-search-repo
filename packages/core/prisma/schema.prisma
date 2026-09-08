@@ -55,7 +55,6 @@ enum JobStatus {
 enum SavedStatus {
   SAVED
   APPLIED
-  ARCHIVED
 }
 
 model Company {

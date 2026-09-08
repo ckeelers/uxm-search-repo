@@ -13,7 +13,6 @@ const TRACK_LABEL: Record<Track, string> = {
 const GROUPS: { status: SavedStatus; label: string }[] = [
   { status: SavedStatus.SAVED, label: "Saved" },
   { status: SavedStatus.APPLIED, label: "Applied" },
-  { status: SavedStatus.ARCHIVED, label: "Archived" },
 ];
 
 function fmtDate(d: Date | null): string {
