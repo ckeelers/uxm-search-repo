@@ -3,6 +3,7 @@
 // deep generated path.
 
 export type {
+  Prisma,
   Company,
   Job,
   SavedJob,

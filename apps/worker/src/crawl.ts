@@ -2,6 +2,8 @@ import {
   prisma,
   normalizeTitle,
   matchTitle,
+  parseCompensation,
+  classifyLocation,
   MatchOutcome,
   SalaryState,
   JobStatus,
@@ -17,6 +19,7 @@ const CLOSE_AFTER_MISSED_CRAWLS = Number(
   process.env.CLOSE_AFTER_MISSED_CRAWLS ?? 2,
 );
 const DELAY_BETWEEN_COMPANIES_MS = 1_000;
+const SALARY_FLOOR = 150_000; // spec: base-band midpoint must be >= this
 
 const ADAPTERS: Record<string, Adapter> = {
   GREENHOUSE: greenhouseAdapter,
@@ -78,10 +81,35 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
   for (const r of raw) {
     seenIds.push(r.externalId);
     const normalizedTitle = normalizeTitle(r.title);
-    const m = matchTitle(normalizedTitle);
-    const matchOutcome = OUTCOME_MAP[m.outcome];
-    const track: Track | null =
-      m.outcome === "STAGE1_INCLUDE" && m.track ? m.track : null;
+    const title = matchTitle(normalizedTitle);
+    const loc = classifyLocation(r.locationText, r.descriptionText);
+    const comp = parseCompensation(r.compText);
+
+    // start from the title verdict; let location / salary veto an include
+    let matchOutcome = OUTCOME_MAP[title.outcome];
+    let matchReason: string | null = title.reason ?? null;
+    let track: Track | null =
+      title.outcome === "STAGE1_INCLUDE" && title.track ? title.track : null;
+
+    const wouldSurface =
+      matchOutcome === MatchOutcome.STAGE1_INCLUDE ||
+      matchOutcome === MatchOutcome.STAGE2_INCLUDE ||
+      matchOutcome === MatchOutcome.REVIEW_QUEUE;
+
+    if (wouldSurface && !loc.isUsBased) {
+      matchOutcome = MatchOutcome.REJECTED;
+      matchReason = "non-us";
+      track = null;
+    } else if (
+      wouldSurface &&
+      comp.state === SalaryState.STATED &&
+      (comp.midpoint ?? 0) < SALARY_FLOOR
+    ) {
+      matchOutcome = MatchOutcome.REJECTED;
+      matchReason = "below-threshold";
+      track = null;
+    }
+
     if (matchOutcome === MatchOutcome.STAGE1_INCLUDE) included++;
 
     const mutable = {
@@ -90,12 +118,19 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
       normalizedTitle,
       track,
       matchOutcome,
-      matchReason: m.reason ?? null,
+      matchReason,
       descriptionText: r.descriptionText,
       rawLocationText: r.locationText ?? null,
-      compRawText: null,
-      // M1 does not classify salary/location yet — M2 backfills these.
-      salaryState: SalaryState.UNKNOWN,
+      siteStates: loc.siteStates,
+      siteArrangement: loc.siteArrangement,
+      remoteUs: loc.remoteUs,
+      remoteScope: loc.remoteScope,
+      remoteStates: loc.remoteStates,
+      salaryState: comp.state,
+      salaryMin: comp.min ?? null,
+      salaryMax: comp.max ?? null,
+      salaryMidpoint: comp.midpoint ?? null,
+      compRawText: comp.raw ?? null,
       datePosted: r.datePosted ?? null,
     };
 

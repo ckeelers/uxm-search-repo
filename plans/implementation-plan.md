@@ -1,9 +1,9 @@
 # Implementation Plan: searchexperience
 
 > **Status:** Approved — Gate 2 of 3 passed
-> **Phase:** Implementation (Gate 3) — M0 done, M1 in progress
+> **Phase:** Implementation (Gate 3) — M0 + M1 done, M2 in progress
 > **Spec:** [`specs/product-spec.md`](../specs/product-spec.md) (approved 2026-09-06)
-> **Last updated:** 2026-09-07
+> **Last updated:** 2026-09-08
 
 ---
 
@@ -320,16 +320,17 @@ Each milestone is shippable and leaves the site more useful than before.
 - [x] `apps/worker/src/seed-companies.ts` — the 20 companies from `m1-seed-companies.md`, idempotent (`pnpm --filter @searchexperience/worker seed`)
 - [x] `/` renders OPEN + included jobs (title, company, track badge, raw location, recency dates, apply link) — dynamic, DB-backed
 - [x] Dry-run against live Greenhouse (stripe/figma/gusto/doordash) — adapter + taxonomy verified; caught + fixed the "Software Engineering – Interaction Design" false-include
-- [ ] **Chris:** deploy, then `railway run --service worker pnpm --filter @searchexperience/worker seed` and one `... crawl`
-- **Note:** M1 does not filter by location/salary yet, so a few non-US roles (e.g. Stripe UK/Canada) will show until M2.
-- **Done when:** real UX Manager roles from the seed companies are visible on the deployed site.
+- [x] **Deployed + seeded + crawled** (2026-09-08): 20 companies, 3,769 postings, **12 matched** across 8 companies (Stripe, Figma, Fivetran, Lyft, Discord, DoorDash, Gusto, Pinterest), 0 errors/blocks; ~3,750 rejects stored with reasons. Web list live.
+- **Note:** M1 does not filter by location/salary yet — Stripe's 2 (UK/Canada) show until M2; some dupes (Lyft, Fivetran post one role under two IDs).
+- **Deploy lesson:** a transient Railway "Deploy Error" before the container starts (build green, no logs) — fixed by a plain Redeploy. Seed/first-crawl run via `railway ssh --service <web>` then `pnpm --filter @searchexperience/worker seed|crawl` (internal `DATABASE_URL` resolves there; no public proxy needed).
 
 ### M2 — The filters that matter
-- `salary.ts` + tests → wired into pipeline (drop STATED midpoint < $150k; tag UNKNOWN)
-- `location.ts` + tests → wired into pipeline (multi-state `siteStates`, `siteArrangement`, `remoteUs`, STATE_LIST scope, non-US drop) — tests seeded with the real `rawLocationText` samples from `m1-seed-companies.md`
-- Migration adds the location facet columns + GIN index on `siteStates`
-- Search UI: track filter, arrangement checkboxes (≥1 enforced) with the OR'd SQL from §6, optional state select, salary-state filter, keyword box — all URL-driven
-- Job card final form + sort order
+- [x] `packages/core/salary.ts` + 9 tests → wired into `crawl.ts` (STATED midpoint < $150k → REJECTED `below-threshold`; else store band; UNKNOWN kept). Handles ranges, `to`, k-notation, hourly ×2080, monthly ×12, multi-band → lowest, non-USD → UNKNOWN, sanity bounds, comp-cue windowing.
+- [x] `packages/core/location.ts` + 11 tests → wired into `crawl.ts`. Two facets (`siteStates[]`/`siteArrangement`, `remoteUs`/`remoteScope`/`remoteStates`); `;` `•` `|` separators, embedded arrangement words, metro→state, full names + 2-letter, non-US → `isUsBased:false` → REJECTED `non-us`; remote state-list read from the description.
+- [x] Facet columns + `siteStates` GIN index — already in the M0 migration, no new migration needed.
+- [x] Search UI (`apps/web/app/page.tsx`): keyword, track, state, salary-state, arrangement checkboxes (default all; ≥1 → OR'd SQL per §6), all URL-driven, no-JS GET form. Cards: track badge, site tag (`Hybrid · CO, NY, CA`), remote tag, band or "Salary unknown / unpublished", recency line.
+- [x] Dry-run vs live Greenhouse: 12 M1 includes → **9 keep, 3 drop** (2 Stripe non-US, 1 Lyft Toronto). All real location formats + bands parsed correctly.
+- [ ] **Chris:** deploy, re-run the crawl (re-classifies all rows; the 3 non-US flip to REJECTED), spot-check the filters on the live site.
 - **Done when:** the spec's worked examples for salary and location all produce correct result sets.
 
 ### M3 — Save a job  → **MVP complete**
