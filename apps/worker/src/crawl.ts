@@ -2,13 +2,14 @@ import {
   prisma,
   normalizeTitle,
   matchTitle,
+  contentCheck,
   parseCompensation,
   classifyLocation,
   MatchOutcome,
   SalaryState,
   JobStatus,
+  Track,
   type Company,
-  type Track,
 } from "@searchexperience/core";
 import { greenhouseAdapter } from "./adapters/greenhouse";
 import { leverAdapter } from "./adapters/lever";
@@ -94,6 +95,21 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
     let matchReason: string | null = title.reason ?? null;
     let track: Track | null =
       title.outcome === "STAGE1_INCLUDE" && title.track ? title.track : null;
+
+    // Stage 2: borderline titles get a description content check
+    if (title.outcome === "REVIEW_QUEUE") {
+      const cc = contentCheck(r.descriptionText);
+      if (cc.decision === "auto-include") {
+        matchOutcome = MatchOutcome.STAGE2_INCLUDE;
+        matchReason = `stage2:${title.reason}(+${cc.score})`;
+        track = title.track ?? Track.UX_DESIGN_MGR;
+      } else if (cc.decision === "reject") {
+        matchOutcome = MatchOutcome.REJECTED;
+        matchReason = `stage2-reject:${title.reason}(${cc.score})`;
+      } else {
+        matchReason = `${title.reason}(stage2 ${cc.score})`;
+      }
+    }
 
     const wouldSurface =
       matchOutcome === MatchOutcome.STAGE1_INCLUDE ||

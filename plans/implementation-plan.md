@@ -343,13 +343,19 @@ Each milestone is shippable and leaves the site more useful than before.
 
 ### M4 — Breadth & freshness
 
-**M4a — Lever + Ashby (done 2026-09-08, code; deploy pending):**
+**M4a — Lever + Ashby (deployed + crawled 2026-09-08):**
 - [x] `ashby.ts` (structured salary via `summaryComponents`, multi-location join) + `lever.ts` (structured `salaryRange`, `country` → non-US); `RawJob` gains `countryHint`; both registered in `crawl.ts` ADAPTERS and the non-US check.
 - [x] `seed-companies.ts` → **50 companies** — GREENHOUSE 36 / LEVER 2 / ASHBY 12, all verified live.
-- [x] `location.ts` bare-city → state map (also fixes `Washington, DC` → DC). 38 core tests green, typecheck + build clean.
-- [ ] **Chris:** deploy, then `railway ssh` → `seed` + `crawl`, spot-check.
+- [x] `location.ts` bare-city → state map (also fixes `Washington, DC` → DC).
+- [x] Live: seeded + crawled, `included=10` across 50 companies.
 
-**M4b — `/admin`:** basic-auth middleware; `/admin/companies` CRUD; `/admin/crawls` log; Stage 2 `contentCheck` + `/admin/review` queue.
+**M4b — `/admin` (done 2026-09-08, code; deploy pending):**
+- [x] `contentCheck()` in `taxonomy.ts` (corroborating vs anti-signal scan → auto-include / review / reject) + wired into `crawl.ts` for REVIEW_QUEUE titles; borderline titles now carry a best-guess `track`. 42 core tests.
+- [x] `middleware.ts` — HTTP basic auth on `/admin/*` (`ADMIN_USER` / `ADMIN_PASS`).
+- [x] `/admin/review` — queue with approve-as-Design / approve-as-Research / reject (server actions → `STAGE2_INCLUDE` / `REJECTED`).
+- [x] `/admin/companies` — list + add + pause/resume + exclude/un-exclude + delete.
+- [x] `/admin/crawls` — last 100 `CrawlRun` rows, errors highlighted.
+- [ ] **Chris:** set `ADMIN_USER` / `ADMIN_PASS` on the `web` service; deploy; re-crawl to populate the queue; work it.
 **M4c — Railway cron:** flip the `worker` schedule on (daily); verify closed-role reconciliation + "No longer listed" end to end.
 **M4d — `/jobs/[id]`** detail page.
 **M4e — `workday` adapter** (per-tenant JSON; Playwright fallback + Dockerfile). FAANG-minus-Amazon custom adapters are follow-on work after M4e.

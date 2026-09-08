@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { normalizeTitle, matchTitle, classifyTitle } from "./taxonomy";
+import {
+  normalizeTitle,
+  matchTitle,
+  classifyTitle,
+  contentCheck,
+} from "./taxonomy";
 import { Track } from "./types";
 
 describe("normalizeTitle", () => {
@@ -122,5 +127,36 @@ describe("matchTitle — the spec's headline cases", () => {
     rejected("Manager, Software Engineering - Interaction Design");
     rejected("Engineering Manager, Design Systems");
     rejected("Data Science Manager, Experience Analytics");
+  });
+
+  it("borderline titles carry a best-guess track for promotion", () => {
+    expect(classifyTitle("Design Manager").track).toBe(Track.UX_DESIGN_MGR);
+    expect(classifyTitle("Research Manager").track).toBe(Track.UX_RESEARCH_MGR);
+  });
+});
+
+describe("contentCheck (Stage 2)", () => {
+  it("auto-includes a description full of design-leadership signal", () => {
+    const r = contentCheck(
+      "You will manage a team of designers, run weekly design reviews, be " +
+        "responsible for hiring designers, and support the career growth of your team. " +
+        "5+ years leading a design team. Fluent in Figma and interaction design.",
+    );
+    expect(r.decision).toBe("auto-include");
+    expect(r.corroborating).toBeGreaterThanOrEqual(3);
+  });
+
+  it("rejects a description that is really product management", () => {
+    const r = contentCheck(
+      "You will own the product roadmap, drive backlog prioritization, lead " +
+        "sprint planning, define the product strategy and own revenue targets for the area.",
+    );
+    expect(r.decision).toBe("reject");
+  });
+
+  it("leaves an ambiguous description in review", () => {
+    expect(contentCheck("Lead a cross-functional team to ship great products.").decision).toBe(
+      "review",
+    );
   });
 });

@@ -149,7 +149,11 @@ export function matchTitle(normalized: string): TitleMatch {
   for (const dq of DISQUALIFIERS) {
     if (n.includes(dq)) {
       if (/\bux product manager\b|\buser experience product manager\b/.test(n)) {
-        return { outcome: "REVIEW_QUEUE", reason: "ux-product-manager" };
+        return {
+          outcome: "REVIEW_QUEUE",
+          reason: "ux-product-manager",
+          track: Track.UX_DESIGN_MGR,
+        };
       }
       return { outcome: "REJECTED", reason: `disqualified:${dq}` };
     }
@@ -170,15 +174,76 @@ export function matchTitle(normalized: string): TitleMatch {
 
   // 5. bare "design" leadership -> human review (brand/marketing design?)
   if (WEAK_DISCIPLINE.test(n)) {
-    return { outcome: "REVIEW_QUEUE", reason: "bare-design-title" };
+    return {
+      outcome: "REVIEW_QUEUE",
+      reason: "bare-design-title",
+      track: Track.UX_DESIGN_MGR,
+    };
   }
 
   // 6. bare "research" leadership -> human review (UX research vs market research?)
   if (RESEARCH_HINT.test(n)) {
-    return { outcome: "REVIEW_QUEUE", reason: "bare-research-title" };
+    return {
+      outcome: "REVIEW_QUEUE",
+      reason: "bare-research-title",
+      track: Track.UX_RESEARCH_MGR,
+    };
   }
 
   return { outcome: "REJECTED", reason: "no-discipline-token" };
+}
+
+// --- Stage 2: content check (borderline titles only) ---------------------
+
+const CORROBORATING = [
+  /manage(?:s|d|r of)?\s+(?:a\s+)?(?:team of\s+)?designers?/i,
+  /(?:lead|leading|leads)\s+(?:a\s+)?(?:team of\s+)?designers?/i,
+  /design (?:reviews?|critiques?|crits)/i,
+  /(?:hiring|recruit(?:ing)?|growing)\s+(?:the\s+)?design/i,
+  /\bux\/ui\b/i,
+  /\busability\b/i,
+  /\buser research\b/i,
+  /\bfigma\b/i,
+  /\binteraction design\b/i,
+  /\bdesign system\b/i,
+  /\byears\b[^.]{0,40}\b(?:managing|leading)\b[^.]{0,20}\bdesign/i,
+  /people management/i,
+  /career (?:growth|development) of (?:your |the )?(?:team|designers)/i,
+];
+
+const ANTI_SIGNALS = [
+  /own(?:s|ing)? the product roadmap/i,
+  /backlog (?:prioriti[sz]ation|grooming)/i,
+  /go-to-market/i,
+  /\bp&l\b/i,
+  /define (?:the )?product strategy/i,
+  /revenue (?:targets|goals|growth)/i,
+  /sprint planning/i,
+];
+
+export interface ContentCheck {
+  score: number;
+  corroborating: number;
+  anti: number;
+  decision: "auto-include" | "review" | "reject";
+}
+
+/**
+ * Scan a borderline role's description for design-leadership signal vs
+ * product-management noise. Only meaningful for REVIEW_QUEUE titles.
+ */
+export function contentCheck(descriptionText: string): ContentCheck {
+  const text = descriptionText ?? "";
+  const corroborating = CORROBORATING.filter((re) => re.test(text)).length;
+  const anti = ANTI_SIGNALS.filter((re) => re.test(text)).length;
+  const score = corroborating - anti;
+
+  let decision: ContentCheck["decision"];
+  if (score >= 2 && anti === 0) decision = "auto-include";
+  else if (score <= -1 || (anti >= 2 && corroborating === 0)) decision = "reject";
+  else decision = "review";
+
+  return { score, corroborating, anti, decision };
 }
 
 /** Convenience: normalize + match in one call. */
