@@ -53,7 +53,7 @@ const ABOVE_MANAGER = /\b(director|vice president|vp|chief|head of)\b/;
 
 /** A different function entirely — reject even when a design word also appears. */
 const WRONG_FUNCTION =
-  /\b(software|engineering|data science|machine learning|analytics|sales|revenue|procurement|hardware|mechanical|electrical|civil|firmware|devops|infrastructure engineer)\b/;
+  /\b(software|engineering|data science|machine learning|analytics|sales|revenue|procurement|hardware|mechanical|electrical|civil|firmware|devops|infrastructure engineer|chip design|physical design|silicon|rtl|serdes|mixed-signal|analog|asic|fpga|vlsi|semiconductor|verification|digital design)\b/;
 
 /** A specific UX/design-leadership discipline (auto-include when paired with leadership). */
 const STRONG_DISCIPLINE =

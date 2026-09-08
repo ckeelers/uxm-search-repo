@@ -21,11 +21,30 @@ export function isBlock(err: unknown): boolean {
 
 /** GET JSON with a hard timeout and a polite User-Agent. */
 export async function getJson<T>(url: string): Promise<T> {
+  return requestJson<T>(url, "GET");
+}
+
+/** POST JSON with a hard timeout and a polite User-Agent. */
+export async function postJson<T>(url: string, body: unknown): Promise<T> {
+  return requestJson<T>(url, "POST", body);
+}
+
+async function requestJson<T>(
+  url: string,
+  method: "GET" | "POST",
+  body?: unknown,
+): Promise<T> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
     const res = await fetch(url, {
-      headers: { "user-agent": USER_AGENT, accept: "application/json" },
+      method,
+      headers: {
+        "user-agent": USER_AGENT,
+        accept: "application/json",
+        ...(body !== undefined ? { "content-type": "application/json" } : {}),
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     });
     if (!res.ok) throw new HttpError(res.status, url);

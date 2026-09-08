@@ -9,6 +9,7 @@ import { prisma, Platform } from "@searchexperience/core";
  *   GREENHOUSE -> boards-api.greenhouse.io/v1/boards/<token>/jobs
  *   LEVER      -> api.lever.co/v0/postings/<token>
  *   ASHBY      -> api.ashbyhq.com/posting-api/job-board/<token>
+ *   WORKDAY    -> "<tenant>/<wd>/<site>", e.g. "adobe/wd5/external_experienced"
  */
 type Seed = { slug: string; name: string; platform: Platform; token: string };
 
@@ -72,6 +73,16 @@ const ASHBY: Array<[string, string, string]> = [
   ["hex", "Hex", "hex"],
 ];
 
+const WORKDAY: Array<[string, string, string]> = [
+  ["adobe", "Adobe", "adobe/wd5/external_experienced"],
+  ["nvidia", "NVIDIA", "nvidia/wd5/NVIDIAExternalCareerSite"],
+  ["salesforce", "Salesforce", "salesforce/wd12/External_Career_Site"],
+  ["autodesk", "Autodesk", "autodesk/wd1/Ext"],
+  ["ebay", "eBay", "ebay/wd5/apply"],
+  ["paypal", "PayPal", "paypal/wd1/jobs"],
+  ["workday-inc", "Workday", "workday/wd5/Workday"],
+];
+
 const SEED: Seed[] = [
   ...GREENHOUSE.map(([slug, name, token]) => ({
     slug,
@@ -91,13 +102,22 @@ const SEED: Seed[] = [
     platform: Platform.ASHBY,
     token,
   })),
+  ...WORKDAY.map(([slug, name, token]) => ({
+    slug,
+    name,
+    platform: Platform.WORKDAY,
+    token,
+  })),
 ];
 
 const CAREERS_URL: Record<Platform, (t: string) => string> = {
   GREENHOUSE: (t) => `https://job-boards.greenhouse.io/${t}`,
   LEVER: (t) => `https://jobs.lever.co/${t}`,
   ASHBY: (t) => `https://jobs.ashbyhq.com/${t}`,
-  WORKDAY: (t) => t,
+  WORKDAY: (t) => {
+    const [tenant, wd, site] = t.split("/");
+    return `https://${tenant}.${wd}.myworkdayjobs.com/${site}`;
+  },
   GENERIC: (t) => t,
 };
 

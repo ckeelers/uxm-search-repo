@@ -373,7 +373,14 @@ Each milestone is shippable and leaves the site more useful than before.
 - [x] Verified live: OpenAI "Product Design Lead, Growth - Codex" → `CA · ONSITE`, remote cleared (was `Hybrid CA + Remote anywhere US`).
 - [ ] **Chris:** deploy + re-crawl.
 
-**M4e — `workday` adapter** (per-tenant JSON; Playwright fallback + Dockerfile). FAANG-minus-Amazon custom adapters are follow-on work after M4e.
+**M4e — `workday` adapter (done 2026-09-08, code; deploy pending):**
+- [x] `workday.ts` — **pure JSON, no Playwright**. `platformId` = `"<tenant>/<wd>/<site>"`. Server-side `searchText` for 5 terms → dedupe → loose title pre-filter → per-job detail fetch (`GET <base><externalPath>`) for real location / date / description / pay. `http.ts` gains `postJson`. Rate-limited (200ms between searches, 250ms between details, 20 details/company cap).
+- [x] `seed-companies.ts` → **57 companies / 4 platforms** (+7 WORKDAY: Adobe, NVIDIA, Salesforce, Autodesk, eBay, PayPal, Workday). `CAREERS_URL` handles the compound token.
+- [x] `taxonomy.ts` — hardware/silicon terms added to `WRONG_FUNCTION` (chip design, physical design, SerDes, mixed-signal, verification, …) so NVIDIA's silicon roles auto-reject instead of flooding the review queue. 48 core tests.
+- [x] Dry-run live: Adobe "Group Product Design Manager" ($223k, WA/CA), Salesforce "Experience Design Lead" ($180k), Workday "Principal AI UX Lead" ($246k) all keep; non-US + hardware correctly dropped.
+- [ ] **Chris:** deploy, re-seed + re-crawl (adds ~60–90s to the crawl for the 7 Workday tenants).
+
+FAANG-minus-Amazon custom adapters (Meta, Apple, Netflix, Google — bespoke career systems) are follow-on work; not required for a working v1.
 
 - **Done when:** ≥40 companies across ≥3 platforms ✓ (50/3), daily auto-crawl, review queue usable.
 

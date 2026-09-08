@@ -14,6 +14,7 @@ import {
 import { greenhouseAdapter } from "./adapters/greenhouse";
 import { leverAdapter } from "./adapters/lever";
 import { ashbyAdapter } from "./adapters/ashby";
+import { workdayAdapter } from "./adapters/workday";
 import type { Adapter, RawJob } from "./adapters/types";
 import { isBlock } from "./http";
 
@@ -28,6 +29,7 @@ const ADAPTERS: Record<string, Adapter> = {
   GREENHOUSE: greenhouseAdapter,
   LEVER: leverAdapter,
   ASHBY: ashbyAdapter,
+  WORKDAY: workdayAdapter,
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));

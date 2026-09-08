@@ -129,6 +129,12 @@ describe("matchTitle — the spec's headline cases", () => {
     rejected("Data Science Manager, Experience Analytics");
   });
 
+  it("rejects hardware / silicon design-manager titles", () => {
+    rejected("Chip Design Manager");
+    rejected("Manager, Digital Design - Mixed-Signal High-Speed I/O SerDes");
+    rejected("Manager, Physical Design Circuit and Signoff CAD");
+  });
+
   it("borderline titles carry a best-guess track for promotion", () => {
     expect(classifyTitle("Design Manager").track).toBe(Track.UX_DESIGN_MGR);
     expect(classifyTitle("Research Manager").track).toBe(Track.UX_RESEARCH_MGR);
