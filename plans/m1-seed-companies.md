@@ -64,6 +64,8 @@ FAANG-minus-Amazon: **Meta, Apple, Netflix, Google** all run bespoke career syst
 - `"San Francisco Bay Area"` — metro name, no state token
 - `"San Francisco, CA, US; Remote, US"` — onsite + remote in one field
 - `"Denver, CO - Hybrid; New York, New York, United States; San Francisco, CA - Hybrid"` — **semicolon-delimited multi-location with embedded arrangement keywords**
+- `"San Francisco, CA • New York, NY • United States"` — Figma uses a **bullet (` • `)** separator instead of `;`
+- `"San Francisco, CA; New York, NY; Seattle, WA"` — DoorDash: semicolons, no arrangement word (arrangement is in the body)
 
 `classifyLocation` therefore needs to: split on `;`, detect `remote`/`hybrid`/`onsite` keywords inside each part, map metro names → states, recognise full state names and 2-letter codes, and treat "Remote, US" as `REMOTE` + `ANYWHERE_US` unless a state list is stated in `content`.
 

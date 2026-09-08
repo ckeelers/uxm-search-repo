@@ -1,9 +1,9 @@
 # Implementation Plan: searchexperience
 
 > **Status:** Approved — Gate 2 of 3 passed
-> **Phase:** Implementation (Gate 3) — M0 in progress
+> **Phase:** Implementation (Gate 3) — M0 done, M1 in progress
 > **Spec:** [`specs/product-spec.md`](../specs/product-spec.md) (approved 2026-09-06)
-> **Last updated:** 2026-09-06
+> **Last updated:** 2026-09-07
 
 ---
 
@@ -310,16 +310,19 @@ Each milestone is shippable and leaves the site more useful than before.
 - [x] Vitest wired in `packages/core` (2 wiring tests green)
 - [x] typecheck + `next build` + tests all pass locally
 - [x] `git init` (own repo, nested under the `Documents` repo); `.gitignore` / `.gitattributes`
-- [ ] **Chris:** create GitHub repo + push; Railway project — Postgres + `web` + `worker` per [`../README.md`](../README.md); set usage cap
-- **Done when:** site is live on Railway, DB migrated (`db:deploy`), `/api/health` returns `db: ok`, worker cron runs clean.
+- [x] GitHub repo + Railway project live: Postgres + `web` + `worker`, three services. `next` bumped to 15.5.9 (Railway CVE gate). `prisma` + `tsx` moved to `dependencies` so a production install keeps them.
+- [x] **Done:** `web` live, `/api/health` → `db: ok`; `20260907033336_init` applied via `web` Pre-Deploy `pnpm db:deploy`; `worker` runs clean on Railway (`companies=0 jobs=0`).
 
 ### M1 — One source, end to end
-- `taxonomy.ts`: `normalizeTitle` + Stage 1 `matchTitle` + tests (spec examples: "Product Design Manager" in, "Product Manager" out, inverted + seniority forms)
-- `greenhouse` adapter
-- Crawl pipeline: fetch → normalize → Stage 1 → upsert → reconcile (no salary/location yet)
-- Seed 15–20 Greenhouse-hosted mid/large product companies with real UX Manager roles (candidate list assembled and token-verified before M1; **Amazon excluded**)
-- `/` renders a plain list of OPEN + included jobs (title, company, apply link, recency dates)
-- **Done when:** real UX Manager jobs from ≥10 companies are visible on the deployed site.
+- [x] `packages/core/taxonomy.ts`: `normalizeTitle` + Stage 1 `matchTitle` (+ `classifyTitle`); disqualifiers, above-manager-tier, wrong-function, bare-design/research → review. 16 tests green.
+- [x] `apps/worker/src/adapters/greenhouse.ts` + `http.ts` (timeout, polite UA, `htmlToText`, block detection)
+- [x] `apps/worker/src/crawl.ts` — real pipeline: fetch → normalize → Stage 1 → upsert (stores REJECTED too, with reason) → reconcile (skipped on a blocked fetch); `CrawlRun` rows; runaway guard
+- [x] `apps/worker/src/seed-companies.ts` — the 20 companies from `m1-seed-companies.md`, idempotent (`pnpm --filter @searchexperience/worker seed`)
+- [x] `/` renders OPEN + included jobs (title, company, track badge, raw location, recency dates, apply link) — dynamic, DB-backed
+- [x] Dry-run against live Greenhouse (stripe/figma/gusto/doordash) — adapter + taxonomy verified; caught + fixed the "Software Engineering – Interaction Design" false-include
+- [ ] **Chris:** deploy, then `railway run --service worker pnpm --filter @searchexperience/worker seed` and one `... crawl`
+- **Note:** M1 does not filter by location/salary yet, so a few non-US roles (e.g. Stripe UK/Canada) will show until M2.
+- **Done when:** real UX Manager roles from the seed companies are visible on the deployed site.
 
 ### M2 — The filters that matter
 - `salary.ts` + tests → wired into pipeline (drop STATED midpoint < $150k; tag UNKNOWN)

@@ -64,3 +64,18 @@ this repo.
 
 Verify: open the `web` URL, then `/<web-url>/api/health` should return
 `{"status":"ok","db":"ok"}`.
+
+## Seeding and crawling
+
+The crawler only visits companies in the `Company` table. Populate it once, then
+run a crawl (the cron does this daily; run it by hand the first time):
+
+```bash
+# with the Railway CLI, against the deployed database:
+railway run --service worker pnpm --filter @searchexperience/worker seed
+railway run --service worker pnpm --filter @searchexperience/worker crawl
+```
+
+`seed` is idempotent. After the first `crawl`, open the `web` URL — indexed
+roles appear on the home page.
+
