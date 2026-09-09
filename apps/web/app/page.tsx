@@ -1,16 +1,11 @@
 import Link from "next/link";
-import { prisma, MatchOutcome, JobStatus, Track } from "@searchexperience/core";
+import { prisma, MatchOutcome, JobStatus } from "@searchexperience/core";
 import type { Prisma } from "@searchexperience/core";
 import { saveJob, removeSaved } from "./actions";
 import { OWNER_ID } from "../lib/owner";
 import { SubmitButton } from "./_components/submit-button";
 
 export const dynamic = "force-dynamic";
-
-const TRACK_LABEL: Record<Track, string> = {
-  UX_DESIGN_MGR: "UX / Design Manager",
-  UX_RESEARCH_MGR: "UX Research Manager",
-};
 
 const STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN",
@@ -50,7 +45,6 @@ export default async function HomePage({
 }) {
   const sp = await searchParams;
   const q = (one(sp.q) ?? "").trim();
-  const track = one(sp.track) ?? "";
   const state = (one(sp.state) ?? "").toUpperCase();
   const salary = one(sp.salary) ?? "";
 
@@ -80,7 +74,6 @@ export default async function HomePage({
   const where: Prisma.JobWhereInput = {
     status: JobStatus.OPEN,
     matchOutcome: { in: [MatchOutcome.STAGE1_INCLUDE, MatchOutcome.STAGE2_INCLUDE] },
-    ...(track ? { track: track as Track } : {}),
     ...(salary === "stated"
       ? { salaryState: "STATED" }
       : salary === "unknown"
@@ -117,20 +110,22 @@ export default async function HomePage({
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">searchexperience</h1>
-          <p className="mt-1 text-sm text-neutral-500">
-            UX Manager roles from company career pages — base band midpoint ≥
-            $150k or unpublished, US only.
-          </p>
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-2xl font-semibold tracking-tight">Search Experience</h1>
+        <div className="flex shrink-0 gap-2 text-sm">
+          <Link
+            href="/saved"
+            className="rounded border border-neutral-300 px-3 py-1.5 hover:bg-neutral-50"
+          >
+            Saved{savedCount ? ` (${savedCount})` : ""}
+          </Link>
+          <Link
+            href="/admin"
+            className="rounded border border-neutral-300 px-3 py-1.5 hover:bg-neutral-50"
+          >
+            Admin
+          </Link>
         </div>
-        <Link
-          href="/saved"
-          className="shrink-0 rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
-        >
-          Saved{savedCount ? ` (${savedCount})` : ""}
-        </Link>
       </header>
 
       <form
@@ -145,14 +140,6 @@ export default async function HomePage({
             placeholder="title or company"
             className="rounded border border-neutral-300 px-2 py-1"
           />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-neutral-500">Track</span>
-          <select name="track" defaultValue={track} className="rounded border border-neutral-300 px-2 py-1">
-            <option value="">Any</option>
-            <option value="UX_DESIGN_MGR">UX / Design Manager</option>
-            <option value="UX_RESEARCH_MGR">UX Research Manager</option>
-          </select>
         </label>
         <label className="flex flex-col gap-1">
           <span className="text-neutral-500">State</span>
@@ -213,11 +200,6 @@ export default async function HomePage({
                       {job.rawTitle}
                     </Link>
                     <span className="text-neutral-500">· {job.company.name}</span>
-                    {job.track && (
-                      <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-600">
-                        {TRACK_LABEL[job.track]}
-                      </span>
-                    )}
                   </div>
 
                   <div className="mt-1 flex flex-wrap gap-1.5 text-xs">

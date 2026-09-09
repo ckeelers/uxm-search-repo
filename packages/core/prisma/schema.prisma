@@ -21,7 +21,8 @@ enum Platform {
 
 enum Track {
   UX_DESIGN_MGR
-  UX_RESEARCH_MGR
+  // (UX_RESEARCH_MGR removed 2026-09-08 — research roles are out of scope.
+  //  keep this enum for future role types, e.g. an IC "UX Designer" track.)
 }
 
 enum MatchOutcome {

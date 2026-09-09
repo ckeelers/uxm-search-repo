@@ -57,7 +57,7 @@ const WRONG_FUNCTION =
 
 /** A specific UX/design-leadership discipline (auto-include when paired with leadership). */
 const STRONG_DISCIPLINE =
-  /\b(ux|user experience|product design|experience design|interaction design|design systems?|ux research|user research|experience research)\b/;
+  /\b(ux|user experience|product design|experience design|interaction design|design systems?)\b/;
 
 /** Bare "design" — real, but ambiguous (could be brand/marketing). Routes to review. */
 const WEAK_DISCIPLINE = /\bdesign\b/;
@@ -65,7 +65,8 @@ const WEAK_DISCIPLINE = /\bdesign\b/;
 /** People-leadership signal at manager level. */
 const LEADERSHIP = /\b(manager|management|lead)\b/;
 
-const RESEARCH_HINT = /\bresearch\b/;
+/** Research leadership is out of scope for now — reject it outright. */
+const RESEARCH_ROLE = /\b(research)\b/;
 
 // --- normalizeTitle --------------------------------------------------------
 
@@ -152,6 +153,11 @@ export function matchTitle(normalized: string): TitleMatch {
     return { outcome: "REJECTED", reason: "wrong-function" };
   }
 
+  // 1c. research leadership is out of scope
+  if (RESEARCH_ROLE.test(n) && LEADERSHIP.test(n)) {
+    return { outcome: "REJECTED", reason: "research-role" };
+  }
+
   // 2. disqualifiers — a different discipline entirely
   for (const dq of DISQUALIFIERS) {
     if (n.includes(dq)) {
@@ -173,10 +179,7 @@ export function matchTitle(normalized: string): TitleMatch {
 
   // 4. a specific UX/design discipline -> include
   if (STRONG_DISCIPLINE.test(n)) {
-    const track = RESEARCH_HINT.test(n)
-      ? Track.UX_RESEARCH_MGR
-      : Track.UX_DESIGN_MGR;
-    return { outcome: "STAGE1_INCLUDE", track };
+    return { outcome: "STAGE1_INCLUDE", track: Track.UX_DESIGN_MGR };
   }
 
   // 5. bare "design" leadership -> human review (brand/marketing design?)
@@ -185,15 +188,6 @@ export function matchTitle(normalized: string): TitleMatch {
       outcome: "REVIEW_QUEUE",
       reason: "bare-design-title",
       track: Track.UX_DESIGN_MGR,
-    };
-  }
-
-  // 6. bare "research" leadership -> human review (UX research vs market research?)
-  if (RESEARCH_HINT.test(n)) {
-    return {
-      outcome: "REVIEW_QUEUE",
-      reason: "bare-research-title",
-      track: Track.UX_RESEARCH_MGR,
     };
   }
 

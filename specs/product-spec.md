@@ -25,22 +25,13 @@ Characteristics:
 - May want to track applications and bookmark roles across sessions
 
 **How they search for their own role:**  
-There are two distinct manager tracks this site serves. Both are in scope.
-
-**Track 1 — UX / Design Manager**  
-Leads a team of UX Designers responsible for defining strategy and executing design work. Titles include:
+The site serves the **UX / Design Manager** role — someone who leads a team of UX Designers responsible for defining strategy and executing design work. Titles include:
 - "UX Manager" / "User Experience Manager"
 - "UX Product Manager" / "UX/UI Manager"
 - "Product Design Manager"
 - Inverted forms: "Manager, UX Design" / "Manager, User Experience"
 
-**Track 2 — UX Research Manager**  
-Leads a team of Experience Researchers focused on ethnographic and qualitative research — understanding how customers actually engage with products, upstream of design execution. Titles include:
-- "UX Research Manager" / "User Experience Research Manager"
-- "Research Manager, UX" / "Manager, UX Research"
-- "Experience Research Manager"
-
-These are related but different roles. A UX Research Manager is not a UX Designer who manages — they lead a research discipline. Both tracks belong on this site; they should be distinguishable in search results so users can filter to the track relevant to them.
+*(Amended 2026-09-08: UX **Research** Manager, previously a second in-scope track, is now out of scope — research-leadership titles are rejected. The `track` field is retained for future role types, e.g. an IC "UX Designer" track, but no track badge is shown while there is only one.)*
 
 A critical frustration on generic boards: filtering for "Product" or "Manager" surfaces a flood of Product Manager (PM) roles, which are a different discipline entirely. This site must treat "Product Manager" as an explicit exclusion, not a match.
 
@@ -90,13 +81,11 @@ Surfaced only if a role clears a title match; ambiguous titles get a second, con
 **Normalization (before any matching):** lowercase and collapse punctuation; strip seniority/scope modifiers (`Senior`, `Sr.`, `Lead`, `Group`, `Staff`, `Principal`) — they never affect a match; strip location / org / requisition-id suffixes; un-invert comma forms ("Manager, UX Design" → "UX Design Manager").
 
 **Stage 1 — Title match**, applied in order:
-1. **Disqualifiers win.** If the normalized title contains `product manager`, `program manager`, `project manager`, `engineering manager`, `product marketing manager`, `partner manager` (or similar) *without* an attached design/UX qualifier → reject.
-2. **Discipline + leadership both required.** The title must contain a discipline token (`ux`, `user experience`, `ui`, `product design`, `experience design`, `interaction design`, `design systems`, `ux research`, `user research`) **and** a leadership token (`manager`, `management`, `head of`, `lead` used as a role). → "Product **Design** Manager" matches; "Product Manager" is rejected.
+1. **Disqualifiers win.** If the normalized title contains `product manager`, `program manager`, `project manager`, `engineering manager`, `product marketing manager`, `partner manager` (or similar) *without* an attached design/UX qualifier → reject. Hardware/silicon-design and (as of 2026-09-08) **research**-leadership titles are also rejected here.
+2. **Discipline + leadership both required.** The title must contain a discipline token (`ux`, `user experience`, `ui`, `product design`, `experience design`, `interaction design`, `design systems`) **and** a leadership token (`manager`, `management`, `head of`, `lead` used as a role). → "Product **Design** Manager" matches; "Product Manager" is rejected.
 3. **No match → reject.**
 
-Matched titles are classified into one of two tracks so results stay filterable:
-- **UX / Design Manager track** — leads a team executing design work ("UX Manager", "User Experience Manager", "UX/UI Manager", "Product Design Manager", "Manager, UX Design", …).
-- **UX Research Manager track** — leads a qualitative / ethnographic research discipline, upstream of design execution ("UX Research Manager", "User Experience Research Manager", "Experience Research Manager", "Research Manager, UX", …). A UX Research Manager is *not* a designer who manages.
+Matched titles are all the **UX / Design Manager** role for now — a team leading design work ("UX Manager", "User Experience Manager", "UX/UI Manager", "Product Design Manager", "Manager, UX Design", …). A `track` field is kept for future role types; no track badge is shown while there is only one.
 
 **Stage 2 — Content check (borderline titles only).** Some titles pass Stage 1 but are genuinely ambiguous — e.g. "Design Manager" (could be brand / marketing design) or "UX Product Manager" (**not auto-included** — always routed here). For these, the job description is scanned for:
 - **Corroborating signals:** "manage a team of designers", "design reviews", "hiring designers", "UX/UI", "usability", "user research", "Figma", "interaction design", "years managing / leading a design team"
@@ -197,7 +186,7 @@ Each saved entry records the job, the date saved, and a user-changeable status (
 - Interview tracking or full ATS functionality
 - Community or forum features
 - Native mobile app
-- Any role outside the UX Manager title taxonomy
+- Any role outside the UX / Design Manager title taxonomy — including **research-leadership** roles (UX Research Manager etc.), removed 2026-09-08
 
 ---
 
@@ -216,3 +205,4 @@ Each saved entry records the job, the date saved, and a user-changeable status (
 *Spec reviewed and approved 2026-09-06. Proceed to planning (Gate 2).*
 *Amended 2026-09-06 during planning: added the current-employer (Amazon) exclusion.*
 *Amended 2026-09-08 during M3: saved-status set reduced to saved → applied (archived dropped by request).*
+*Amended 2026-09-08: UX Research Manager track removed — research-leadership roles are now out of scope; the visible track badge is removed while only one role type exists.*

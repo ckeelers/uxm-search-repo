@@ -55,8 +55,7 @@ export default async function ReviewPage() {
               </a>
               {(
                 [
-                  ["design", "✓ UX / Design Mgr"],
-                  ["research", "✓ UX Research Mgr"],
+                  ["approve", "✓ Include"],
                   ["reject", "✕ Reject"],
                 ] as const
               ).map(([decision, label]) => (

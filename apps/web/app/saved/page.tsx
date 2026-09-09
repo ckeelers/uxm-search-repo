@@ -1,15 +1,10 @@
 import Link from "next/link";
-import { prisma, JobStatus, SavedStatus, Track } from "@searchexperience/core";
+import { prisma, JobStatus, SavedStatus } from "@searchexperience/core";
 import { removeSaved, setSavedStatus, setSavedNotes } from "../actions";
 import { OWNER_ID } from "../../lib/owner";
 import { SubmitButton } from "../_components/submit-button";
 
 export const dynamic = "force-dynamic";
-
-const TRACK_LABEL: Record<Track, string> = {
-  UX_DESIGN_MGR: "UX / Design Manager",
-  UX_RESEARCH_MGR: "UX Research Manager",
-};
 
 const GROUPS: { status: SavedStatus; label: string }[] = [
   { status: SavedStatus.SAVED, label: "Saved" },
@@ -76,11 +71,6 @@ export default async function SavedPage() {
                         {job.rawTitle}
                       </Link>
                       <span className="text-neutral-500">· {job.company.name}</span>
-                      {job.track && (
-                        <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-600">
-                          {TRACK_LABEL[job.track]}
-                        </span>
-                      )}
                       {job.status === JobStatus.CLOSED && (
                         <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
                           No longer listed

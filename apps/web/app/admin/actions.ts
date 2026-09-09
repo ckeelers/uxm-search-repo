@@ -81,7 +81,7 @@ export async function reopenToReview(form: FormData): Promise<void> {
 
 export async function reviewDecision(form: FormData): Promise<void> {
   const jobId = str(form, "jobId");
-  const decision = str(form, "decision"); // "design" | "research" | "reject"
+  const decision = str(form, "decision"); // "approve" | "reject"
   if (!jobId) throw new Error("jobId required");
 
   if (decision === "reject") {
@@ -89,14 +89,13 @@ export async function reviewDecision(form: FormData): Promise<void> {
       where: { id: jobId },
       data: { matchOutcome: MatchOutcome.REJECTED, matchReason: "admin-reject", track: null },
     });
-  } else if (decision === "design" || decision === "research") {
+  } else if (decision === "approve") {
     await prisma.job.update({
       where: { id: jobId },
       data: {
         matchOutcome: MatchOutcome.STAGE2_INCLUDE,
         matchReason: "admin-approve",
-        track:
-          decision === "research" ? Track.UX_RESEARCH_MGR : Track.UX_DESIGN_MGR,
+        track: Track.UX_DESIGN_MGR,
       },
     });
   } else {

@@ -74,12 +74,18 @@ describe("matchTitle — the spec's headline cases", () => {
     stage1("Senior Product Design Manager, Growth", Track.UX_DESIGN_MGR);
   });
 
-  it("includes UX Research Manager titles on the research track", () => {
-    stage1("UX Research Manager", Track.UX_RESEARCH_MGR);
-    stage1("User Experience Research Manager", Track.UX_RESEARCH_MGR);
-    stage1("Experience Research Manager", Track.UX_RESEARCH_MGR);
-    stage1("Research Manager, UX", Track.UX_RESEARCH_MGR);
-    stage1("Manager, UX Research", Track.UX_RESEARCH_MGR);
+  it("rejects research-leadership titles (out of scope)", () => {
+    const r = (raw: string) => {
+      const c = classifyTitle(raw);
+      expect(c.outcome, `${raw} -> ${JSON.stringify(c)}`).toBe("REJECTED");
+      expect(c.reason).toBe("research-role");
+    };
+    r("UX Research Manager");
+    r("User Experience Research Manager");
+    r("Experience Research Manager");
+    r("Research Manager, UX");
+    r("Manager, UX Research");
+    r("Design Research Manager");
   });
 
   it("rejects Product / Program / Project / Engineering Manager", () => {
@@ -135,9 +141,8 @@ describe("matchTitle — the spec's headline cases", () => {
     rejected("Manager, Physical Design Circuit and Signoff CAD");
   });
 
-  it("borderline titles carry a best-guess track for promotion", () => {
+  it("borderline design titles carry the design track for promotion", () => {
     expect(classifyTitle("Design Manager").track).toBe(Track.UX_DESIGN_MGR);
-    expect(classifyTitle("Research Manager").track).toBe(Track.UX_RESEARCH_MGR);
   });
 
   it("handles more real-world title shapes", () => {

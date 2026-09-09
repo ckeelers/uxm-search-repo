@@ -1,16 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { prisma, JobStatus, Track } from "@searchexperience/core";
+import { prisma, JobStatus } from "@searchexperience/core";
 import { saveJob, removeSaved } from "../../actions";
 import { OWNER_ID } from "../../../lib/owner";
 import { SubmitButton } from "../../_components/submit-button";
 
 export const dynamic = "force-dynamic";
-
-const TRACK_LABEL: Record<Track, string> = {
-  UX_DESIGN_MGR: "UX / Design Manager",
-  UX_RESEARCH_MGR: "UX Research Manager",
-};
 
 function fmtDate(d: Date | null): string {
   return d
@@ -52,11 +47,6 @@ export default async function JobPage({
       <p className="text-neutral-500">{job.company.name}</p>
 
       <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-        {job.track && (
-          <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-neutral-600">
-            {TRACK_LABEL[job.track]}
-          </span>
-        )}
         {job.siteStates.length > 0 && (
           <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700">
             {job.siteArrangement === "HYBRID" ? "Hybrid" : "Onsite"} ·{" "}

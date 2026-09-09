@@ -51,7 +51,7 @@ Plain pnpm workspaces (no Turborepo for v1 — revisit if builds get slow).
 
 ```prisma
 enum Platform        { GREENHOUSE  LEVER  ASHBY  WORKDAY  GENERIC }
-enum Track           { UX_DESIGN_MGR  UX_RESEARCH_MGR }
+enum Track           { UX_DESIGN_MGR }   // research track removed 2026-09-08; kept for future role types
 enum MatchOutcome    { STAGE1_INCLUDE  STAGE2_INCLUDE  REVIEW_QUEUE  REJECTED }
 enum SiteArrangement { ONSITE  HYBRID  UNKNOWN }   // in-office expectation for a physical worksite
 enum RemoteScope     { ANYWHERE_US  STATE_LIST }
@@ -352,7 +352,7 @@ Each milestone is shippable and leaves the site more useful than before.
 **M4b — `/admin` (done 2026-09-08, code; deploy pending):**
 - [x] `contentCheck()` in `taxonomy.ts` (corroborating vs anti-signal scan → auto-include / review / reject) + wired into `crawl.ts` for REVIEW_QUEUE titles; borderline titles now carry a best-guess `track`. 42 core tests.
 - [x] `middleware.ts` — HTTP basic auth on `/admin/*` (`ADMIN_USER` / `ADMIN_PASS`).
-- [x] `/admin/review` — queue with approve-as-Design / approve-as-Research / reject (server actions → `STAGE2_INCLUDE` / `REJECTED`).
+- [x] `/admin/review` — queue with Include / Reject (server actions → `STAGE2_INCLUDE` / `REJECTED`). *(Was approve-as-Design / approve-as-Research until the research track was removed 2026-09-08.)*
 - [x] `/admin/companies` — list + add + pause/resume + exclude/un-exclude + delete.
 - [x] `/admin/crawls` — last 100 `CrawlRun` rows, errors highlighted.
 - [ ] **Chris:** set `ADMIN_USER` / `ADMIN_PASS` on the `web` service; deploy; re-crawl to populate the queue; work it.
@@ -397,6 +397,11 @@ FAANG-minus-Amazon custom adapters (Meta, Apple, Netflix, Google — bespoke car
 **Fix (2026-09-08, code; deploy pending): human verdicts are sticky.** The crawl's update path was recomputing `matchOutcome` every run, so a role rejected in `/admin/review` came back next crawl. Now a job whose `matchReason` is `admin-reject` / `admin-approve` / `admin-reopened` keeps its outcome + track across crawls; everything else (description, salary, location, `lastVerified`) still refreshes.
 
 **Fix (2026-09-08, code; deploy pending): action buttons had no pending state.** Every server-action `<form>` (admin review/reject/reopen/company toggles, public save/status/note) now uses a shared `SubmitButton` (`app/_components/submit-button.tsx`, `useFormStatus`) that disables + shows "…" while the round-trip runs — the "had to click reject several times" symptom was queued clicks against a dead-looking button.
+
+**Change (2026-09-08, code; deploy pending): cadence + research track.**
+- Crawl is now **cadence-agnostic** (Chris set `0 10,22 * * *` — twice daily ≈ 6am/6pm ET): close is wall-clock (`CLOSE_AFTER_STALE_HOURS`, default 36), `CRAWL_MAX_RUNTIME_MS` → 10 min, and a run in progress skips rather than stacks. `CLOSE_AFTER_MISSED_CRAWLS` removed.
+- **UX Research Manager track removed** by request: `Track` enum → `{ UX_DESIGN_MGR }` (migration `20260909053101_drop_research_track`); `matchTitle` rejects any research-leadership title (`reason: research-role`); the track badge, the `/` track filter, and the admin "approve as Research" button are gone. `track` field retained for future role types. Spec + plan amended.
+- Home header → "Search Experience", tagline removed, **Admin** link added next to Saved.
 
 ---
 
