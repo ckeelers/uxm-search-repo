@@ -410,7 +410,15 @@ FAANG-minus-Amazon custom adapters (Meta, Apple, Netflix, Google — bespoke car
 - Job card: company monogram (`lib/monogram.ts`, first-2 letters), title + company, arrangement/state/remote pills, blue salary top-right, `Posted · Seen` bottom-left, ghost **Save** + solid **View job ↗** bottom-right. **Verified date moved to the results header** ("Verified {latest}"), nothing dropped from the card.
 - `/saved` and `/jobs/[id]` restyled to match (monogram, pill tags, rounded cards).
 - Deliberate deviations from the mockup: kept "Search Experience" (not lowercase); no Track dropdown (one role type); monogram is first-2-letters not hand-picked.
-- **Styles are CSS Modules + Tailwind `@apply`** — every redesign file has a sibling `.module.css` with semantic classes (`.jobCard`, `.hero`, `.filterCard`, …); JSX uses `className={styles.x}`. Global `body` styling moved to `globals.css` `@layer base`. Only literal utilities left in the refactored files: `peer sr-only` on the hidden filter checkbox (a CSS-selector hook + a11y). Admin sub-pages (companies/crawls/review/rejected) and `submit-button`'s `disabled:opacity-50` are still inline — convert if wanted.
+- **Styles are CSS Modules + Tailwind `@apply`** — every page/component has a sibling `.module.css` with semantic classes; JSX uses `className={styles.x}`. Global `body` styling in `globals.css` `@layer base`. Admin sub-pages now share `admin/shared.module.css`. Only literal utilities left: `submit-button`'s `disabled:opacity-50` and a few one-off layout helpers.
+
+**Follow-up polish (2026-09-08, code; deploy pending):**
+- Filter arrangement toggles: selected state via `.toggle:has(.toggleInput:checked)` (blue fill/border/text + checkmark); unselected = neutral. (Dropped the `peer` approach — combinator couldn't reach the nested checkmark.)
+- **"New!" badge** before a job title on `/` and `/jobs/[id]` when `firstSeen === lastVerified` (crawl now sets both to the same instant on create); it clears on the next crawl when `lastVerified` bumps.
+- Removed the "Sourced from company career pages…" hero subline.
+- `/admin/review` + `/admin/rejected` given the job-card treatment (monogram, rounded card); all 4 admin sub-pages converted to CSS Modules.
+- **Notes** on `/saved`: `NoteEditor` client component — an "✏️ Add notes / Edit notes" toggle line under the actions row; clicking reveals a textarea + Save/Cancel; saving returns to a static note display.
+- **`/saved` split into Saved / Applied tabs** (`?tab=applied`); an Applied job shows "↩ Restore to saved" instead of "→ Applied".
 
 ---
 

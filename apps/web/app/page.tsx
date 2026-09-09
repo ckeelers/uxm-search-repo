@@ -112,16 +112,29 @@ export default async function HomePage({
         )
       : null;
 
+  const isNew = (j: { firstSeen: Date; lastVerified: Date }) =>
+    j.firstSeen.getTime() === j.lastVerified.getTime();
+
   const arrToggle = (name: string, label: string, checked: boolean, dot: string) => (
     <label className={styles.toggle}>
-      <input type="checkbox" name={name} value="1" defaultChecked={checked} className="peer sr-only" />
-      <span className={styles.toggleFace}>
-        <span className={styles.toggleLabel}>
-          <span className={`${styles.dot} ${dot}`} />
-          {label}
-        </span>
-        <span className={styles.toggleCheck}>✓</span>
-      </span>
+      <input
+        type="checkbox"
+        name={name}
+        value="1"
+        defaultChecked={checked}
+        className={styles.toggleInput}
+      />
+      <span className={`${styles.dot} ${dot}`} />
+      <span className={styles.toggleText}>{label}</span>
+      <svg className={styles.toggleCheck} viewBox="0 0 16 16" fill="none" aria-hidden>
+        <path
+          d="M3 8.5l3.2 3.2L13 5"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </label>
   );
 
@@ -133,10 +146,6 @@ export default async function HomePage({
         <div className={styles.heroInner}>
           <p className={styles.eyebrow}>UX Manager · US only</p>
           <h1 className={styles.heroTitle}>Senior design leadership roles</h1>
-          <p className={styles.heroSub}>
-            Sourced from company career pages — base band midpoint ≥ $150k, or
-            unpublished.
-          </p>
         </div>
       </section>
 
@@ -223,12 +232,17 @@ export default async function HomePage({
                             {monogram(job.company.name)}
                           </div>
                           <div className={styles.titleCol}>
-                            <Link
-                              href={`/jobs/${job.id}`}
-                              className={styles.cardTitle}
-                            >
-                              {job.rawTitle}
-                            </Link>
+                            <div className={styles.titleLine}>
+                              {isNew(job) && (
+                                <span className={styles.newBadge}>New!</span>
+                              )}
+                              <Link
+                                href={`/jobs/${job.id}`}
+                                className={styles.cardTitle}
+                              >
+                                {job.rawTitle}
+                              </Link>
+                            </div>
                             <p className={styles.company}>{job.company.name}</p>
                             <div className={styles.tags}>
                               {job.siteStates.length > 0 && (

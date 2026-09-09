@@ -1,0 +1,122 @@
+.intro {
+  @apply mb-4 text-sm text-neutral-500;
+}
+.empty {
+  @apply rounded-xl border border-neutral-200 px-4 py-8 text-center text-sm text-neutral-500;
+}
+.list {
+  @apply space-y-4;
+}
+
+/* job-style card (matches the search results) */
+.card {
+  @apply flex gap-3 rounded-xl border border-neutral-200 p-5;
+}
+.avatar {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xs font-semibold text-white;
+}
+.cardMain {
+  @apply min-w-0 flex-1;
+}
+.titleRow {
+  @apply flex flex-wrap items-center gap-x-2 gap-y-1;
+}
+.jobTitle {
+  @apply font-semibold;
+}
+.company {
+  @apply text-sm text-neutral-500;
+}
+.reason {
+  @apply rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700;
+}
+.meta {
+  @apply mt-1 text-xs text-neutral-400;
+}
+.excerpt {
+  @apply mt-2 line-clamp-3 text-sm text-neutral-600;
+}
+.actions {
+  @apply mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm;
+}
+.link {
+  @apply text-blue-600 hover:underline;
+}
+.btnApprove {
+  @apply rounded-lg border border-neutral-300 px-2.5 py-1 hover:bg-neutral-50;
+}
+.btnReject {
+  @apply rounded-lg border border-red-200 px-2.5 py-1 text-red-600 hover:bg-red-50;
+}
+
+/* tables (companies, crawls) */
+.card2 {
+  @apply overflow-hidden rounded-xl border border-neutral-200;
+}
+.table {
+  @apply w-full text-left text-sm;
+}
+.thead {
+  @apply border-b border-neutral-200 bg-neutral-50 text-xs uppercase text-neutral-400;
+}
+.th {
+  @apply px-3 py-2;
+}
+.td {
+  @apply px-3 py-2;
+}
+.rowErr {
+  @apply bg-red-50/60;
+}
+.tbody {
+  @apply divide-y divide-neutral-100;
+}
+
+/* add-company form */
+.form {
+  @apply mb-6 grid gap-2 rounded-xl border border-neutral-200 p-4 text-sm sm:grid-cols-2;
+}
+.formTitle {
+  @apply font-medium sm:col-span-2;
+}
+.input {
+  @apply rounded-lg border border-neutral-300 px-3 py-2;
+}
+.inputWide {
+  @apply rounded-lg border border-neutral-300 px-3 py-2 sm:col-span-2;
+}
+.addBtn {
+  @apply justify-self-start rounded-lg bg-blue-600 px-3 py-2 font-medium text-white hover:bg-blue-700;
+}
+
+/* rejected page */
+.reasonChips {
+  @apply mb-6 flex flex-wrap gap-2;
+}
+.chip {
+  @apply rounded-full border border-neutral-300 px-2 py-1 text-xs hover:bg-neutral-50;
+}
+.chipActive {
+  @apply rounded-full border border-neutral-900 bg-neutral-900 px-2 py-1 text-xs text-white;
+}
+.group {
+  @apply mb-6;
+}
+.groupHead {
+  @apply mb-2 text-sm font-semibold text-neutral-700;
+}
+.groupCount {
+  @apply text-neutral-400;
+}
+.rejList {
+  @apply divide-y divide-neutral-100 text-sm;
+}
+.rejRow {
+  @apply flex items-baseline justify-between gap-3 py-1.5;
+}
+.rejReason {
+  @apply text-neutral-400;
+}
+.more {
+  @apply py-1.5 text-xs text-neutral-400;
+}

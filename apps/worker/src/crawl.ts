@@ -199,11 +199,16 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
         },
       });
     } else {
+      // firstSeen === lastVerified marks a job as "new" until the next crawl
+      // bumps lastVerified. Set both to the same instant explicitly.
+      const now = new Date();
       await prisma.job.create({
         data: {
           companyId: company.id,
           externalId: r.externalId,
           ...mutable,
+          firstSeen: now,
+          lastVerified: now,
         },
       });
       created++;

@@ -1,6 +1,7 @@
 import { prisma, JobStatus, MatchOutcome } from "@searchexperience/core";
 import { reopenToReview } from "../actions";
 import { SubmitButton } from "../../_components/submit-button";
+import s from "../shared.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -46,28 +47,24 @@ export default async function RejectedPage({
 
   return (
     <>
-      <p className="mb-4 text-sm text-neutral-500">
+      <p className={s.intro}>
         {rejects.length} rejected open roles, by reason — sanity-check the taxonomy.
         {focus ? (
           <>
             {" "}
-            <a href="/admin/rejected" className="text-blue-600 hover:underline">
+            <a href="/admin/rejected" className={s.link}>
               clear filter
             </a>
           </>
         ) : null}
       </p>
 
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className={s.reasonChips}>
         {sorted.map(([f, list]) => (
           <a
             key={f}
             href={`/admin/rejected?reason=${encodeURIComponent(f)}`}
-            className={`rounded border px-2 py-1 text-xs ${
-              focus === f
-                ? "border-neutral-900 bg-neutral-900 text-white"
-                : "border-neutral-300 hover:bg-neutral-50"
-            }`}
+            className={focus === f ? s.chipActive : s.chip}
           >
             {f} · {list.length}
           </a>
@@ -77,28 +74,28 @@ export default async function RejectedPage({
       {sorted
         .filter(([f]) => !focus || f === focus)
         .map(([f, list]) => (
-          <section key={f} className="mb-6">
-            <h2 className="mb-2 text-sm font-semibold text-neutral-700">
-              {f} <span className="text-neutral-400">({list.length})</span>
+          <section key={f} className={s.group}>
+            <h2 className={s.groupHead}>
+              {f} <span className={s.groupCount}>({list.length})</span>
             </h2>
-            <ul className="divide-y divide-neutral-100 text-sm">
+            <ul className={s.rejList}>
               {list.slice(0, focus ? 200 : 8).map((j) => (
-                <li key={j.id} className="flex items-baseline justify-between gap-3 py-1.5">
+                <li key={j.id} className={s.rejRow}>
                   <span className="min-w-0">
                     <span className="font-medium">{j.rawTitle}</span>{" "}
-                    <span className="text-neutral-500">· {j.company.name}</span>{" "}
-                    <span className="text-neutral-400">— {j.matchReason}</span>
+                    <span className={s.company}>· {j.company.name}</span>{" "}
+                    <span className={s.rejReason}>— {j.matchReason}</span>
                   </span>
                   <form action={reopenToReview} className="shrink-0">
                     <input type="hidden" name="jobId" value={j.id} />
-                    <SubmitButton className="text-blue-600 hover:underline" pendingText="…">
+                    <SubmitButton className={s.link} pendingText="…">
                       → review
                     </SubmitButton>
                   </form>
                 </li>
               ))}
               {!focus && list.length > 8 && (
-                <li className="py-1.5 text-xs text-neutral-400">
+                <li className={s.more}>
                   <a
                     href={`/admin/rejected?reason=${encodeURIComponent(f)}`}
                     className="hover:underline"

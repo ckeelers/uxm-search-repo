@@ -52,7 +52,12 @@ export default async function JobPage({
         <div className={styles.head}>
           <div className={styles.avatar}>{monogram(job.company.name)}</div>
           <div className={styles.titleCol}>
-            <h1 className={styles.title}>{job.rawTitle}</h1>
+            <h1 className={styles.title}>
+              {job.firstSeen.getTime() === job.lastVerified.getTime() && (
+                <span className={styles.newBadge}>New!</span>
+              )}
+              {job.rawTitle}
+            </h1>
             <p className={styles.company}>{job.company.name}</p>
           </div>
         </div>

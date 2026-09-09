@@ -1,0 +1,27 @@
+.wrap {
+  @apply mt-3;
+}
+.noteText {
+  @apply whitespace-pre-wrap rounded-lg bg-neutral-50 px-3 py-2 text-sm text-neutral-700;
+}
+.toggle {
+  @apply mt-1 inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-neutral-900;
+}
+.icon {
+  @apply h-3.5 w-3.5;
+}
+.form {
+  @apply flex flex-col gap-2;
+}
+.textarea {
+  @apply w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm;
+}
+.row {
+  @apply flex items-center gap-2;
+}
+.save {
+  @apply rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50;
+}
+.cancel {
+  @apply rounded-lg px-3 py-1.5 text-sm text-neutral-500 hover:bg-neutral-100;
+}
