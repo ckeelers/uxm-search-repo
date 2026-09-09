@@ -1,0 +1,30 @@
+.screen {
+  @apply min-h-screen;
+}
+.header {
+  @apply border-b border-neutral-200;
+}
+.headerInner {
+  @apply mx-auto flex max-w-5xl items-center justify-between px-4 py-4 sm:px-6;
+}
+.brand {
+  @apply flex items-baseline gap-3;
+}
+.wordmark {
+  @apply font-serif text-lg font-bold tracking-tight;
+}
+.badge {
+  @apply text-xs font-semibold uppercase tracking-widest text-neutral-400;
+}
+.exit {
+  @apply text-sm text-neutral-500 hover:underline;
+}
+.body {
+  @apply mx-auto max-w-5xl px-4 py-8 sm:px-6;
+}
+.tabs {
+  @apply mb-6 flex flex-wrap gap-2 text-sm;
+}
+.tab {
+  @apply rounded-full border border-neutral-300 px-3 py-1.5 text-neutral-600 hover:bg-neutral-50;
+}

@@ -1,8 +1,10 @@
-import Link from "next/link";
 import { prisma, JobStatus, SavedStatus } from "@searchexperience/core";
 import { removeSaved, setSavedStatus, setSavedNotes } from "../actions";
 import { OWNER_ID } from "../../lib/owner";
 import { SubmitButton } from "../_components/submit-button";
+import { SiteHeader } from "../_components/site-header";
+import { monogram } from "../../lib/monogram";
+import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -35,104 +37,99 @@ export default async function SavedPage() {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <header className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Saved roles</h1>
-        <Link
-          href="/"
-          className="rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-50"
-        >
-          ← Search
-        </Link>
-      </header>
+    <div className={styles.screen}>
+      <SiteHeader savedCount={rows.length} />
 
-      {error ? (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-          Couldn&apos;t load saved roles — database unavailable.
-        </p>
-      ) : rows.length === 0 ? (
-        <p className="rounded-md bg-neutral-50 px-4 py-3 text-sm text-neutral-500">
-          Nothing saved yet. Hit ☆ Save on a role.
-        </p>
-      ) : (
-        GROUPS.map(({ status, label }) => {
-          const group = rows.filter((r) => r.status === status);
-          if (group.length === 0) return null;
-          return (
-            <section key={status} className="mb-8">
-              <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-400">
-                {label} ({group.length})
-              </h2>
-              <ul className="divide-y divide-neutral-200">
-                {group.map(({ job, notes }) => (
-                  <li key={job.id} className="py-4">
-                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                      <Link href={`/jobs/${job.id}`} className="font-medium hover:underline">
-                        {job.rawTitle}
-                      </Link>
-                      <span className="text-neutral-500">· {job.company.name}</span>
-                      {job.status === JobStatus.CLOSED && (
-                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-xs text-amber-700">
-                          No longer listed
-                        </span>
-                      )}
-                    </div>
+      <div className={styles.body}>
+        <h1 className={styles.title}>Saved roles</h1>
 
-                    <div className="mt-1 text-xs text-neutral-400">
-                      Posted {fmtDate(job.datePosted)} · Verified{" "}
-                      {fmtDate(job.lastVerified)}
-                      {job.rawLocationText ? ` · ${job.rawLocationText}` : ""}
-                    </div>
+        {error ? (
+          <p className={styles.error}>
+            Couldn&apos;t load saved roles — database unavailable.
+          </p>
+        ) : rows.length === 0 ? (
+          <p className={styles.empty}>Nothing saved yet. Hit ☆ Save on a role.</p>
+        ) : (
+          GROUPS.map(({ status, label }) => {
+            const group = rows.filter((r) => r.status === status);
+            if (group.length === 0) return null;
+            return (
+              <section key={status} className={styles.group}>
+                <h2 className={styles.groupLabel}>
+                  {label} ({group.length})
+                </h2>
+                <ul className={styles.list}>
+                  {group.map(({ job, notes }) => (
+                    <li key={job.id} className={styles.card}>
+                      <div className={styles.avatar}>
+                        {monogram(job.company.name)}
+                      </div>
+                      <div className={styles.main}>
+                        <div className={styles.titleRow}>
+                          <a href={`/jobs/${job.id}`} className={styles.jobTitle}>
+                            {job.rawTitle}
+                          </a>
+                          <span className={styles.company}>{job.company.name}</span>
+                          {job.status === JobStatus.CLOSED && (
+                            <span className={styles.closedTag}>No longer listed</span>
+                          )}
+                        </div>
 
-                    <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
-                      <a
-                        href={job.sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-blue-600 hover:underline"
-                      >
-                        Apply ↗
-                      </a>
-                      {GROUPS.filter((g) => g.status !== status).map((g) => (
-                        <form key={g.status} action={setSavedStatus}>
+                        <p className={styles.meta}>
+                          Posted {fmtDate(job.datePosted)} · Seen{" "}
+                          {fmtDate(job.firstSeen)} · Verified{" "}
+                          {fmtDate(job.lastVerified)}
+                          {job.rawLocationText ? ` · ${job.rawLocationText}` : ""}
+                        </p>
+
+                        <div className={styles.actions}>
+                          <a
+                            href={job.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.link}
+                          >
+                            View job ↗
+                          </a>
+                          {GROUPS.filter((g) => g.status !== status).map((g) => (
+                            <form key={g.status} action={setSavedStatus}>
+                              <input type="hidden" name="jobId" value={job.id} />
+                              <input type="hidden" name="status" value={g.status} />
+                              <SubmitButton className={styles.linkMuted}>
+                                → {g.label}
+                              </SubmitButton>
+                            </form>
+                          ))}
+                          <form action={removeSaved}>
+                            <input type="hidden" name="jobId" value={job.id} />
+                            <SubmitButton className={styles.linkDanger}>
+                              Remove
+                            </SubmitButton>
+                          </form>
+                        </div>
+
+                        <form action={setSavedNotes} className={styles.noteForm}>
                           <input type="hidden" name="jobId" value={job.id} />
-                          <input type="hidden" name="status" value={g.status} />
-                          <SubmitButton className="text-neutral-500 hover:text-neutral-900 hover:underline">
-                            → {g.label}
+                          <textarea
+                            name="notes"
+                            rows={2}
+                            defaultValue={notes ?? ""}
+                            placeholder="Notes…"
+                            className={styles.textarea}
+                          />
+                          <SubmitButton className={styles.noteBtn}>
+                            Save note
                           </SubmitButton>
                         </form>
-                      ))}
-                      <form action={removeSaved}>
-                        <input type="hidden" name="jobId" value={job.id} />
-                        <SubmitButton className="text-red-500 hover:underline">
-                          Remove
-                        </SubmitButton>
-                      </form>
-                    </div>
-
-                    <form
-                      action={setSavedNotes}
-                      className="mt-2 flex flex-col gap-1 sm:flex-row sm:items-end"
-                    >
-                      <input type="hidden" name="jobId" value={job.id} />
-                      <textarea
-                        name="notes"
-                        rows={2}
-                        defaultValue={notes ?? ""}
-                        placeholder="Notes…"
-                        className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
-                      />
-                      <SubmitButton className="shrink-0 rounded border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50">
-                        Save note
-                      </SubmitButton>
-                    </form>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          );
-        })
-      )}
-    </main>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            );
+          })
+        )}
+      </div>
+    </div>
   );
 }

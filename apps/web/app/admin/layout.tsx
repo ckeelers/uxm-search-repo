@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "./layout.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -11,23 +12,31 @@ const TABS = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <header className="mb-6 flex items-center justify-between border-b border-neutral-200 pb-3">
-        <div className="flex items-center gap-4">
-          <span className="font-semibold">admin</span>
-          <nav className="flex gap-3 text-sm">
-            {TABS.map((t) => (
-              <Link key={t.href} href={t.href} className="text-neutral-600 hover:underline">
-                {t.label}
-              </Link>
-            ))}
-          </nav>
+    <div className={styles.screen}>
+      <header className={styles.header}>
+        <div className={styles.headerInner}>
+          <div className={styles.brand}>
+            <Link href="/" className={styles.wordmark}>
+              Search Experience
+            </Link>
+            <span className={styles.badge}>admin</span>
+          </div>
+          <Link href="/" className={styles.exit}>
+            ← site
+          </Link>
         </div>
-        <Link href="/" className="text-sm text-neutral-500 hover:underline">
-          ← site
-        </Link>
       </header>
-      {children}
+
+      <div className={styles.body}>
+        <nav className={styles.tabs}>
+          {TABS.map((t) => (
+            <Link key={t.href} href={t.href} className={styles.tab}>
+              {t.label}
+            </Link>
+          ))}
+        </nav>
+        {children}
+      </div>
     </div>
   );
 }

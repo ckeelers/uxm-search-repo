@@ -403,6 +403,15 @@ FAANG-minus-Amazon custom adapters (Meta, Apple, Netflix, Google — bespoke car
 - **UX Research Manager track removed** by request: `Track` enum → `{ UX_DESIGN_MGR }` (migration `20260909053101_drop_research_track`); `matchTitle` rejects any research-leadership title (`reason: research-role`); the track badge, the `/` track filter, and the admin "approve as Research" button are gone. `track` field retained for future role types. Spec + plan amended.
 - Home header → "Search Experience", tagline removed, **Admin** link added next to Saved.
 
+**UI redesign (2026-09-08, code; deploy pending)** — adapted to Chris's Figma mockup:
+- `next/font` (Inter body + Source Serif 4 display); `font-serif` for the wordmark and page headings.
+- Shared `SiteHeader` (thin white bar: serif wordmark · Saved · Admin) across `/`, `/saved`, `/jobs/[id]`; admin gets its own header variant.
+- Home: dark hero band (eyebrow "UX Manager · US only" + serif "Senior design leadership roles" + subtitle), two-column layout — left bordered filter **card** (Search / State / Salary / Arrangement pill-toggles, no-JS via `peer-checked`), right results.
+- Job card: company monogram (`lib/monogram.ts`, first-2 letters), title + company, arrangement/state/remote pills, blue salary top-right, `Posted · Seen` bottom-left, ghost **Save** + solid **View job ↗** bottom-right. **Verified date moved to the results header** ("Verified {latest}"), nothing dropped from the card.
+- `/saved` and `/jobs/[id]` restyled to match (monogram, pill tags, rounded cards).
+- Deliberate deviations from the mockup: kept "Search Experience" (not lowercase); no Track dropdown (one role type); monogram is first-2-letters not hand-picked.
+- **Styles are CSS Modules + Tailwind `@apply`** — every redesign file has a sibling `.module.css` with semantic classes (`.jobCard`, `.hero`, `.filterCard`, …); JSX uses `className={styles.x}`. Global `body` styling moved to `globals.css` `@layer base`. Only literal utilities left in the refactored files: `peer sr-only` on the hidden filter checkbox (a CSS-selector hook + a11y). Admin sub-pages (companies/crawls/review/rejected) and `submit-button`'s `disabled:opacity-50` are still inline — convert if wanted.
+
 ---
 
 ## 9. Decisions (resolved 2026-09-06)

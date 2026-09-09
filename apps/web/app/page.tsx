@@ -4,6 +4,9 @@ import type { Prisma } from "@searchexperience/core";
 import { saveJob, removeSaved } from "./actions";
 import { OWNER_ID } from "../lib/owner";
 import { SubmitButton } from "./_components/submit-button";
+import { SiteHeader } from "./_components/site-header";
+import { monogram } from "../lib/monogram";
+import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -101,158 +104,203 @@ export default async function HomePage({
     error = true;
   }
 
-  const cb = (name: string, label: string, checked: boolean) => (
-    <label className="inline-flex items-center gap-1.5 text-sm">
-      <input type="checkbox" name={name} value="1" defaultChecked={checked} />
-      {label}
+  const latestVerified =
+    jobs.length > 0
+      ? jobs.reduce(
+          (max, j) => (j.lastVerified > max ? j.lastVerified : max),
+          jobs[0]!.lastVerified,
+        )
+      : null;
+
+  const arrToggle = (name: string, label: string, checked: boolean, dot: string) => (
+    <label className={styles.toggle}>
+      <input type="checkbox" name={name} value="1" defaultChecked={checked} className="peer sr-only" />
+      <span className={styles.toggleFace}>
+        <span className={styles.toggleLabel}>
+          <span className={`${styles.dot} ${dot}`} />
+          {label}
+        </span>
+        <span className={styles.toggleCheck}>✓</span>
+      </span>
     </label>
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold tracking-tight">Search Experience</h1>
-        <div className="flex shrink-0 gap-2 text-sm">
-          <Link
-            href="/saved"
-            className="rounded border border-neutral-300 px-3 py-1.5 hover:bg-neutral-50"
-          >
-            Saved{savedCount ? ` (${savedCount})` : ""}
-          </Link>
-          <Link
-            href="/admin"
-            className="rounded border border-neutral-300 px-3 py-1.5 hover:bg-neutral-50"
-          >
-            Admin
-          </Link>
-        </div>
-      </header>
+    <div className={styles.screen}>
+      <SiteHeader savedCount={savedCount} />
 
-      <form
-        method="GET"
-        className="mb-6 grid gap-3 rounded-lg border border-neutral-200 p-4 text-sm sm:grid-cols-2"
-      >
-        <label className="flex flex-col gap-1">
-          <span className="text-neutral-500">Keyword</span>
-          <input
-            name="q"
-            defaultValue={q}
-            placeholder="title or company"
-            className="rounded border border-neutral-300 px-2 py-1"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-neutral-500">State</span>
-          <select name="state" defaultValue={state} className="rounded border border-neutral-300 px-2 py-1">
-            <option value="">Any</option>
-            {STATES.map((s) => (
-              <option key={s} value={s}>{s}</option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-neutral-500">Salary</span>
-          <select name="salary" defaultValue={salary} className="rounded border border-neutral-300 px-2 py-1">
-            <option value="">Any</option>
-            <option value="stated">Band stated</option>
-            <option value="unknown">Unpublished</option>
-          </select>
-        </label>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:col-span-2">
-          <span className="text-neutral-500">Arrangement</span>
-          {cb("onsite", "Onsite", onsite)}
-          {cb("hybrid", "Hybrid", hybrid)}
-          {cb("remote", "Remote", remote)}
-        </div>
-        <div className="flex gap-3 sm:col-span-2">
-          <button className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white">
-            Filter
-          </button>
-          <a href="/" className="px-3 py-1.5 text-sm text-neutral-500 hover:underline">
-            Reset
-          </a>
-        </div>
-      </form>
-
-      {error ? (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
-          Couldn&apos;t load jobs — database unavailable.
-        </p>
-      ) : jobs.length === 0 ? (
-        <p className="rounded-md bg-neutral-50 px-4 py-3 text-sm text-neutral-500">
-          No roles match. Try widening the filters.
-        </p>
-      ) : (
-        <>
-          <p className="mb-3 text-sm text-neutral-500">
-            {jobs.length} role{jobs.length === 1 ? "" : "s"}
+      <section className={styles.hero}>
+        <div className={styles.heroInner}>
+          <p className={styles.eyebrow}>UX Manager · US only</p>
+          <h1 className={styles.heroTitle}>Senior design leadership roles</h1>
+          <p className={styles.heroSub}>
+            Sourced from company career pages — base band midpoint ≥ $150k, or
+            unpublished.
           </p>
-          <ul className="divide-y divide-neutral-200">
-            {jobs.map((job) => {
-              const band = fmtBand(job.salaryMin, job.salaryMax);
-              return (
-                <li key={job.id} className="py-4">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {job.rawTitle}
-                    </Link>
-                    <span className="text-neutral-500">· {job.company.name}</span>
-                  </div>
+        </div>
+      </section>
 
-                  <div className="mt-1 flex flex-wrap gap-1.5 text-xs">
-                    {job.siteStates.length > 0 && (
-                      <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700">
-                        {job.siteArrangement === "HYBRID" ? "Hybrid" : "Onsite"} ·{" "}
-                        {job.siteStates.join(", ")}
-                      </span>
-                    )}
-                    {job.remoteUs && (
-                      <span className="rounded bg-green-50 px-1.5 py-0.5 text-green-700">
-                        {job.remoteScope === "STATE_LIST" && job.remoteStates.length > 0
-                          ? `Remote — ${job.remoteStates.join(", ")}`
-                          : "Remote: anywhere (US)"}
-                      </span>
-                    )}
-                    <span
-                      className={`rounded px-1.5 py-0.5 ${
-                        band ? "bg-neutral-100 text-neutral-700" : "bg-amber-50 text-amber-700"
-                      }`}
-                    >
-                      {band ?? "Salary unknown / unpublished"}
-                    </span>
-                  </div>
+      <div className={styles.body}>
+        <div className={styles.columns}>
+          <aside className={styles.sidebar}>
+            <form method="GET" className={styles.filterCard}>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Search</span>
+                <input
+                  name="q"
+                  defaultValue={q}
+                  placeholder="Title or company…"
+                  className={styles.input}
+                />
+              </label>
 
-                  <div className="mt-1 text-xs text-neutral-400">
-                    Posted {fmtDate(job.datePosted)} · Seen {fmtDate(job.firstSeen)} ·
-                    Verified {fmtDate(job.lastVerified)}
-                    {job.rawLocationText ? ` · ${job.rawLocationText}` : ""}
-                  </div>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>State</span>
+                <select name="state" defaultValue={state} className={styles.select}>
+                  <option value="">Any</option>
+                  {STATES.map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </label>
 
-                  <div className="mt-1 flex items-center gap-3">
-                    <a
-                      href={job.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-sm text-blue-600 hover:underline"
-                    >
-                      Apply on {job.company.name} site ↗
-                    </a>
-                    <form action={savedIds.has(job.id) ? removeSaved : saveJob}>
-                      <input type="hidden" name="jobId" value={job.id} />
-                      <SubmitButton className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">
-                        {savedIds.has(job.id) ? "★ Saved" : "☆ Save"}
-                      </SubmitButton>
-                    </form>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </>
-      )}
-    </main>
+              <label className={styles.field}>
+                <span className={styles.fieldLabel}>Salary</span>
+                <select name="salary" defaultValue={salary} className={styles.select}>
+                  <option value="">Any</option>
+                  <option value="stated">Band stated</option>
+                  <option value="unknown">Unpublished</option>
+                </select>
+              </label>
+
+              <div>
+                <span className={styles.fieldLabel}>Arrangement</span>
+                <div className={styles.toggleList}>
+                  {arrToggle("onsite", "Onsite", onsite, styles.dotBlue)}
+                  {arrToggle("hybrid", "Hybrid", hybrid, styles.dotBlue)}
+                  {arrToggle("remote", "Remote", remote, styles.dotGreen)}
+                </div>
+              </div>
+
+              <div className={styles.actions}>
+                <button className={styles.btnPrimary}>Apply filters</button>
+                <a href="/" className={styles.btnGhost}>
+                  Clear filters
+                </a>
+              </div>
+            </form>
+          </aside>
+
+          <div className={styles.results}>
+            <div className={styles.resultsHead}>
+              <p className={styles.count}>
+                <span className={styles.countNum}>{jobs.length}</span>{" "}
+                <span className={styles.countWord}>
+                  role{jobs.length === 1 ? "" : "s"}
+                </span>
+              </p>
+              {latestVerified && (
+                <p className={styles.verified}>Verified {fmtDate(latestVerified)}</p>
+              )}
+            </div>
+
+            {error ? (
+              <p className={styles.error}>
+                Couldn&apos;t load jobs — database unavailable.
+              </p>
+            ) : jobs.length === 0 ? (
+              <p className={styles.empty}>No roles match. Try widening the filters.</p>
+            ) : (
+              <ul className={styles.list}>
+                {jobs.map((job) => {
+                  const band = fmtBand(job.salaryMin, job.salaryMax);
+                  const isSaved = savedIds.has(job.id);
+                  return (
+                    <li key={job.id} className={styles.card}>
+                      <div className={styles.cardTop}>
+                        <div className={styles.cardMain}>
+                          <div className={styles.avatar}>
+                            {monogram(job.company.name)}
+                          </div>
+                          <div className={styles.titleCol}>
+                            <Link
+                              href={`/jobs/${job.id}`}
+                              className={styles.cardTitle}
+                            >
+                              {job.rawTitle}
+                            </Link>
+                            <p className={styles.company}>{job.company.name}</p>
+                            <div className={styles.tags}>
+                              {job.siteStates.length > 0 && (
+                                <span className={styles.tag}>
+                                  <span
+                                    className={`${styles.dot} ${styles.dotBlue}`}
+                                  />
+                                  {job.siteArrangement === "HYBRID"
+                                    ? "Hybrid"
+                                    : "Onsite"}
+                                </span>
+                              )}
+                              {job.siteStates.map((s) => (
+                                <span key={s} className={styles.tag}>
+                                  {s}
+                                </span>
+                              ))}
+                              {job.remoteUs && (
+                                <span className={styles.tag}>
+                                  <span
+                                    className={`${styles.dot} ${styles.dotGreen}`}
+                                  />
+                                  {job.remoteScope === "STATE_LIST" &&
+                                  job.remoteStates.length > 0
+                                    ? `Remote — ${job.remoteStates.join(", ")}`
+                                    : "Remote (US)"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className={styles.salaryCol}>
+                          {band ? (
+                            <span className={styles.salary}>{band}</span>
+                          ) : (
+                            <span className={styles.salaryUnknown}>
+                              Salary unknown
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className={styles.cardFoot}>
+                        <p className={styles.meta}>
+                          Posted {fmtDate(job.datePosted)} · Seen{" "}
+                          {fmtDate(job.firstSeen)}
+                        </p>
+                        <div className={styles.footActions}>
+                          <form action={isSaved ? removeSaved : saveJob}>
+                            <input type="hidden" name="jobId" value={job.id} />
+                            <SubmitButton className={styles.saveBtn}>
+                              {isSaved ? "★ Saved" : "☆ Save"}
+                            </SubmitButton>
+                          </form>
+                          <a
+                            href={job.sourceUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className={styles.viewBtn}
+                          >
+                            View job ↗
+                          </a>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

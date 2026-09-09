@@ -4,6 +4,9 @@ import { prisma, JobStatus } from "@searchexperience/core";
 import { saveJob, removeSaved } from "../../actions";
 import { OWNER_ID } from "../../../lib/owner";
 import { SubmitButton } from "../../_components/submit-button";
+import { SiteHeader } from "../../_components/site-header";
+import { monogram } from "../../../lib/monogram";
+import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
 
@@ -38,68 +41,71 @@ export default async function JobPage({
   const salary = band(job.salaryMin, job.salaryMax);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6">
-      <Link href="/" className="text-sm text-neutral-500 hover:underline">
-        ← Search
-      </Link>
+    <div className={styles.screen}>
+      <SiteHeader />
 
-      <h1 className="mt-3 text-xl font-semibold">{job.rawTitle}</h1>
-      <p className="text-neutral-500">{job.company.name}</p>
+      <div className={styles.body}>
+        <Link href="/" className={styles.back}>
+          ← Back to search
+        </Link>
 
-      <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-        {job.siteStates.length > 0 && (
-          <span className="rounded bg-blue-50 px-1.5 py-0.5 text-blue-700">
-            {job.siteArrangement === "HYBRID" ? "Hybrid" : "Onsite"} ·{" "}
-            {job.siteStates.join(", ")}
+        <div className={styles.head}>
+          <div className={styles.avatar}>{monogram(job.company.name)}</div>
+          <div className={styles.titleCol}>
+            <h1 className={styles.title}>{job.rawTitle}</h1>
+            <p className={styles.company}>{job.company.name}</p>
+          </div>
+        </div>
+
+        <div className={styles.tags}>
+          {job.siteStates.length > 0 && (
+            <span className={styles.tag}>
+              <span className={`${styles.dot} ${styles.dotBlue}`} />
+              {job.siteArrangement === "HYBRID" ? "Hybrid" : "Onsite"} ·{" "}
+              {job.siteStates.join(", ")}
+            </span>
+          )}
+          {job.remoteUs && (
+            <span className={styles.tag}>
+              <span className={`${styles.dot} ${styles.dotGreen}`} />
+              {job.remoteScope === "STATE_LIST" && job.remoteStates.length > 0
+                ? `Remote — ${job.remoteStates.join(", ")}`
+                : "Remote (US)"}
+            </span>
+          )}
+          <span className={salary ? styles.salaryTag : styles.salaryUnknownTag}>
+            {salary ?? "Salary unknown / unpublished"}
           </span>
-        )}
-        {job.remoteUs && (
-          <span className="rounded bg-green-50 px-1.5 py-0.5 text-green-700">
-            {job.remoteScope === "STATE_LIST" && job.remoteStates.length > 0
-              ? `Remote — ${job.remoteStates.join(", ")}`
-              : "Remote: anywhere (US)"}
-          </span>
-        )}
-        <span
-          className={`rounded px-1.5 py-0.5 ${
-            salary ? "bg-neutral-100 text-neutral-700" : "bg-amber-50 text-amber-700"
-          }`}
-        >
-          {salary ?? "Salary unknown / unpublished"}
-        </span>
-        {job.status === JobStatus.CLOSED && (
-          <span className="rounded bg-amber-50 px-1.5 py-0.5 text-amber-700">
-            No longer listed
-          </span>
-        )}
-      </div>
+          {job.status === JobStatus.CLOSED && (
+            <span className={styles.closedTag}>No longer listed</span>
+          )}
+        </div>
 
-      <div className="mt-2 text-xs text-neutral-400">
-        Posted {fmtDate(job.datePosted)} · First seen {fmtDate(job.firstSeen)} · Last
-        verified {fmtDate(job.lastVerified)}
-        {job.rawLocationText ? ` · ${job.rawLocationText}` : ""}
-      </div>
+        <p className={styles.meta}>
+          Posted {fmtDate(job.datePosted)} · First seen {fmtDate(job.firstSeen)} ·
+          Last verified {fmtDate(job.lastVerified)}
+          {job.rawLocationText ? ` · ${job.rawLocationText}` : ""}
+        </p>
 
-      <div className="mt-4 flex items-center gap-3">
-        <a
-          href={job.sourceUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="rounded bg-neutral-900 px-3 py-1.5 text-sm text-white"
-        >
-          Apply on {job.company.name} site ↗
-        </a>
-        <form action={saved ? removeSaved : saveJob}>
-          <input type="hidden" name="jobId" value={job.id} />
-          <SubmitButton className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">
-            {saved ? "★ Saved" : "☆ Save"}
-          </SubmitButton>
-        </form>
-      </div>
+        <div className={styles.cta}>
+          <a
+            href={job.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={styles.viewBtn}
+          >
+            View job on {job.company.name} site ↗
+          </a>
+          <form action={saved ? removeSaved : saveJob}>
+            <input type="hidden" name="jobId" value={job.id} />
+            <SubmitButton className={styles.saveBtn}>
+              {saved ? "★ Saved" : "☆ Save"}
+            </SubmitButton>
+          </form>
+        </div>
 
-      <article className="mt-6 whitespace-pre-wrap text-sm leading-relaxed text-neutral-700">
-        {job.descriptionText}
-      </article>
-    </main>
+        <article className={styles.description}>{job.descriptionText}</article>
+      </div>
+    </div>
   );
 }

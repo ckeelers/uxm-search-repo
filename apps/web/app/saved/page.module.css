@@ -1,0 +1,69 @@
+.screen {
+  @apply min-h-screen;
+}
+.body {
+  @apply mx-auto max-w-3xl px-4 py-10 sm:px-6;
+}
+.title {
+  @apply mb-6 font-serif text-3xl font-bold;
+}
+.error {
+  @apply rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700;
+}
+.empty {
+  @apply rounded-xl border border-neutral-200 px-4 py-8 text-center text-sm text-neutral-500;
+}
+.group {
+  @apply mb-8;
+}
+.groupLabel {
+  @apply mb-3 text-xs font-semibold uppercase tracking-wide text-neutral-400;
+}
+.list {
+  @apply space-y-4;
+}
+.card {
+  @apply flex gap-3 rounded-xl border border-neutral-200 p-5;
+}
+.avatar {
+  @apply flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-xs font-semibold text-white;
+}
+.main {
+  @apply min-w-0 flex-1;
+}
+.titleRow {
+  @apply flex flex-wrap items-baseline gap-x-2;
+}
+.jobTitle {
+  @apply font-semibold hover:underline;
+}
+.company {
+  @apply text-sm text-neutral-500;
+}
+.closedTag {
+  @apply rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-700;
+}
+.meta {
+  @apply mt-1 text-xs text-neutral-400;
+}
+.actions {
+  @apply mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm;
+}
+.link {
+  @apply text-blue-600 hover:underline;
+}
+.linkMuted {
+  @apply text-neutral-500 hover:text-neutral-900 hover:underline;
+}
+.linkDanger {
+  @apply text-red-500 hover:underline;
+}
+.noteForm {
+  @apply mt-3 flex flex-col gap-2 sm:flex-row sm:items-end;
+}
+.textarea {
+  @apply w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm;
+}
+.noteBtn {
+  @apply shrink-0 rounded-lg border border-neutral-300 px-3 py-2 text-sm hover:bg-neutral-50;
+}

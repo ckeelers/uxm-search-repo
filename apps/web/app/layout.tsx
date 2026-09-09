@@ -1,9 +1,22 @@
 import type { Metadata } from "next";
+import { Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
+const sans = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+});
+const serif = Source_Serif_4({
+  subsets: ["latin"],
+  weight: ["400", "600", "700"],
+  variable: "--font-serif",
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "searchexperience",
-  description: "A focused job search for UX Manager roles.",
+  title: "Search Experience",
+  description: "UX Manager roles, sourced only from company career pages.",
 };
 
 export default function RootLayout({
@@ -12,10 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-white text-neutral-900 antialiased">
-        {children}
-      </body>
+    <html lang="en" className={`${sans.variable} ${serif.variable}`}>
+      <body>{children}</body>
     </html>
   );
 }
