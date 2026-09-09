@@ -3,6 +3,7 @@ import { prisma, MatchOutcome, JobStatus, Track } from "@searchexperience/core";
 import type { Prisma } from "@searchexperience/core";
 import { saveJob, removeSaved } from "./actions";
 import { OWNER_ID } from "../lib/owner";
+import { SubmitButton } from "./_components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -259,9 +260,9 @@ export default async function HomePage({
                     </a>
                     <form action={savedIds.has(job.id) ? removeSaved : saveJob}>
                       <input type="hidden" name="jobId" value={job.id} />
-                      <button className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+                      <SubmitButton className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">
                         {savedIds.has(job.id) ? "★ Saved" : "☆ Save"}
-                      </button>
+                      </SubmitButton>
                     </form>
                   </div>
                 </li>

@@ -1,5 +1,6 @@
 import { prisma, JobStatus, MatchOutcome } from "@searchexperience/core";
 import { reopenToReview } from "../actions";
+import { SubmitButton } from "../../_components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -90,7 +91,9 @@ export default async function RejectedPage({
                   </span>
                   <form action={reopenToReview} className="shrink-0">
                     <input type="hidden" name="jobId" value={j.id} />
-                    <button className="text-blue-600 hover:underline">→ review</button>
+                    <SubmitButton className="text-blue-600 hover:underline" pendingText="…">
+                      → review
+                    </SubmitButton>
                   </form>
                 </li>
               ))}

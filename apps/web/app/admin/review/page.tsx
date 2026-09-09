@@ -1,5 +1,6 @@
 import { prisma, JobStatus, MatchOutcome } from "@searchexperience/core";
 import { reviewDecision } from "../actions";
+import { SubmitButton } from "../../_components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function ReviewPage() {
                 <form key={decision} action={reviewDecision}>
                   <input type="hidden" name="jobId" value={job.id} />
                   <input type="hidden" name="decision" value={decision} />
-                  <button
+                  <SubmitButton
                     className={`rounded border px-2 py-1 ${
                       decision === "reject"
                         ? "border-red-200 text-red-600 hover:bg-red-50"
@@ -70,7 +71,7 @@ export default async function ReviewPage() {
                     }`}
                   >
                     {label}
-                  </button>
+                  </SubmitButton>
                 </form>
               ))}
             </div>

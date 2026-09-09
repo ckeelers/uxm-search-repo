@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma, JobStatus, SavedStatus, Track } from "@searchexperience/core";
 import { removeSaved, setSavedStatus, setSavedNotes } from "../actions";
 import { OWNER_ID } from "../../lib/owner";
+import { SubmitButton } from "../_components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -106,14 +107,16 @@ export default async function SavedPage() {
                         <form key={g.status} action={setSavedStatus}>
                           <input type="hidden" name="jobId" value={job.id} />
                           <input type="hidden" name="status" value={g.status} />
-                          <button className="text-neutral-500 hover:text-neutral-900 hover:underline">
+                          <SubmitButton className="text-neutral-500 hover:text-neutral-900 hover:underline">
                             → {g.label}
-                          </button>
+                          </SubmitButton>
                         </form>
                       ))}
                       <form action={removeSaved}>
                         <input type="hidden" name="jobId" value={job.id} />
-                        <button className="text-red-500 hover:underline">Remove</button>
+                        <SubmitButton className="text-red-500 hover:underline">
+                          Remove
+                        </SubmitButton>
                       </form>
                     </div>
 
@@ -129,9 +132,9 @@ export default async function SavedPage() {
                         placeholder="Notes…"
                         className="w-full rounded border border-neutral-300 px-2 py-1 text-sm"
                       />
-                      <button className="shrink-0 rounded border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50">
+                      <SubmitButton className="shrink-0 rounded border border-neutral-300 px-3 py-1 text-sm hover:bg-neutral-50">
                         Save note
-                      </button>
+                      </SubmitButton>
                     </form>
                   </li>
                 ))}

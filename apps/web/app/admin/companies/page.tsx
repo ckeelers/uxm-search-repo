@@ -1,5 +1,6 @@
 import { prisma, Platform } from "@searchexperience/core";
 import { upsertCompany, toggleCompanyFlag, deleteCompany } from "../actions";
+import { SubmitButton } from "../../_components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,9 @@ export default async function CompaniesPage() {
         </select>
         <input name="platformId" placeholder="board token / slug" className="rounded border border-neutral-300 px-2 py-1" />
         <input name="careersUrl" placeholder="careers URL (optional)" className="rounded border border-neutral-300 px-2 py-1 sm:col-span-2" />
-        <button className="justify-self-start rounded bg-neutral-900 px-3 py-1.5 text-white">
+        <SubmitButton className="justify-self-start rounded bg-neutral-900 px-3 py-1.5 text-white">
           Add
-        </button>
+        </SubmitButton>
       </form>
 
       <div className="overflow-x-auto">
@@ -74,7 +75,9 @@ export default async function CompaniesPage() {
                     />
                     <form action={deleteCompany}>
                       <input type="hidden" name="id" value={c.id} />
-                      <button className="text-red-500 hover:underline">Delete</button>
+                      <SubmitButton className="text-red-500 hover:underline">
+                        Delete
+                      </SubmitButton>
                     </form>
                   </div>
                 </td>
@@ -92,7 +95,7 @@ function ToggleBtn({ id, flag, label }: { id: string; flag: string; label: strin
     <form action={toggleCompanyFlag}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="flag" value={flag} />
-      <button className="text-neutral-600 hover:underline">{label}</button>
+      <SubmitButton className="text-neutral-600 hover:underline">{label}</SubmitButton>
     </form>
   );
 }

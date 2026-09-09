@@ -396,6 +396,8 @@ FAANG-minus-Amazon custom adapters (Meta, Apple, Netflix, Google — bespoke car
 
 **Fix (2026-09-08, code; deploy pending): human verdicts are sticky.** The crawl's update path was recomputing `matchOutcome` every run, so a role rejected in `/admin/review` came back next crawl. Now a job whose `matchReason` is `admin-reject` / `admin-approve` / `admin-reopened` keeps its outcome + track across crawls; everything else (description, salary, location, `lastVerified`) still refreshes.
 
+**Fix (2026-09-08, code; deploy pending): action buttons had no pending state.** Every server-action `<form>` (admin review/reject/reopen/company toggles, public save/status/note) now uses a shared `SubmitButton` (`app/_components/submit-button.tsx`, `useFormStatus`) that disables + shows "…" while the round-trip runs — the "had to click reject several times" symptom was queued clicks against a dead-looking button.
+
 ---
 
 ## 9. Decisions (resolved 2026-09-06)

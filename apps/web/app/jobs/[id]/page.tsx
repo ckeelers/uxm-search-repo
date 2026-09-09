@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma, JobStatus, Track } from "@searchexperience/core";
 import { saveJob, removeSaved } from "../../actions";
 import { OWNER_ID } from "../../../lib/owner";
+import { SubmitButton } from "../../_components/submit-button";
 
 export const dynamic = "force-dynamic";
 
@@ -100,9 +101,9 @@ export default async function JobPage({
         </a>
         <form action={saved ? removeSaved : saveJob}>
           <input type="hidden" name="jobId" value={job.id} />
-          <button className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">
+          <SubmitButton className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">
             {saved ? "★ Saved" : "☆ Save"}
-          </button>
+          </SubmitButton>
         </form>
       </div>
 
