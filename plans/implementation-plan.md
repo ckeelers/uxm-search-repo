@@ -145,7 +145,7 @@ model CrawlRun {
 
 Notes:
 - **Rejected jobs are stored** (`matchOutcome = REJECTED`, `matchReason` set) from M1 on — cheap, and the only way to tune the taxonomy against real data.
-- `CLOSE_AFTER_MISSED_CRAWLS` (default **2** — ~48h at daily cadence) controls when an unseen job flips to `CLOSED`.
+- An unseen job flips to `CLOSED` once it has gone unseen for **`CLOSE_AFTER_STALE_HOURS`** (default 36) — a wall-clock rule, not a miss count, so it behaves the same at any cadence.
 - **Excluded companies** (`excluded = true`) are skipped by the crawler entirely and never appear in results. **Amazon is excluded** (the builder's current employer). `/admin/companies` shows excluded rows greyed so one isn't re-added by accident.
 - **Location is two independent facets, not one enum.** A posting can be sited in several states *and* offer US-remote at the same time (real: Gusto lists 3 hybrid offices; Pinterest lists "San Francisco, CA, US; Remote, US"). Hence `siteStates String[]` + `siteArrangement` for the physical side, and `remoteUs` / `remoteScope` / `remoteStates` for the remote side. `siteStates` needs a **GIN index** for `= ANY(...)` state filtering; add `@@index([status, siteArrangement])` too.
 
@@ -251,19 +251,19 @@ for each Company where active = true and excluded = false:
      record CrawlRun.errorText, leave every existing Job untouched (no missedCrawls bump), move to next company
   else:
      for each Job where companyId, status=OPEN, externalId NOT IN seen:
-        missedCrawls++ ; if missedCrawls >= CLOSE_AFTER_MISSED_CRAWLS -> status=CLOSED, closedAt=now
+        missedCrawls++ ; if now - lastVerified >= CLOSE_AFTER_STALE_HOURS -> status=CLOSED, closedAt=now
   close CrawlRun (counts)
 ```
 
 A block therefore degrades one company's data freshness (its jobs stop refreshing, `lastVerified` stops advancing) but never wrongly closes them — the operator has days to react via `/admin`.
 
 ### 5.4 Schedule
-Railway cron on the `worker` service, `0 8 * * *` (daily 08:00 UTC). Entry point `pnpm --filter @searchexperience/worker start`, which runs `src/crawl.ts` via **tsx** (no build step — fine for a short-lived cron job; revisit bundling if cold-start time matters). (Alt considered: GitHub Actions scheduled workflow — keeps scraping load off Railway, also free. Railway cron chosen for a single deploy target; revisit in M4+ if crawler traffic or cost becomes real.)
+Railway cron on the `worker` service. Entry point `pnpm --filter @searchexperience/worker start`, which runs `src/crawl.ts` via **tsx**. **Cadence-agnostic** — currently `0 10,22 * * *` (10:00 / 22:00 UTC ≈ 6am / 6pm US Eastern; Railway cron is UTC, no DST). Anything twice-daily → ~15 min is safe (see 5.5).
 
-### 5.5 Runaway-cost guards
-The cron service only bills while the script runs, so the only risk is a hang. Defenses, most important first:
-- **In-script timeouts** — a global run cap (`CRAWL_MAX_RUNTIME_MS`, default 15 min) that force-exits, a per-company cap (~90 s), and a per-HTTP-request cap (~15 s via `AbortController`). The script physically cannot run away regardless of platform behaviour.
-- **No overlapping runs** — the 15-min global cap is far below the 24-h interval; a `CrawlRun` lock row checked on startup is the backstop.
+### 5.5 Runaway-cost & concurrency guards
+The cron service only bills while the script runs. Defenses, most important first:
+- **In-script timeouts** — a global run cap (`CRAWL_MAX_RUNTIME_MS`, default **10 min** — a run can't outlive this), plus a per-HTTP-request cap (~15 s via `AbortController`).
+- **No overlapping runs** — on startup the crawler checks for a `CrawlRun` still `finishedAt = null` and younger than 12 min; if found, it logs and exits without doing anything.
 - **Railway usage cap** — a hard spending limit ($10–15) set in the Railway dashboard; if anything exceeds it Railway stops the services, so worst case is bounded.
 - **Small footprint** — the worker needs minimal RAM until Playwright (M4); Playwright adapters get tighter timeouts and can run on a slower cadence.
 
@@ -287,7 +287,7 @@ The cron service only bills while the script runs, so the only risk is a hang. D
 
 ## 7. Environment & Railway
 
-**Env vars:** `DATABASE_URL`, `ADMIN_USER`, `ADMIN_PASS`, `CLOSE_AFTER_MISSED_CRAWLS` (default 2), `CRAWL_USER_AGENT`, `CRAWL_MAX_RUNTIME_MS` (default 900000).
+**Env vars:** `DATABASE_URL`, `ADMIN_USER`, `ADMIN_PASS`, `CLOSE_AFTER_STALE_HOURS` (default 12), `CRAWL_USER_AGENT`, `CRAWL_MAX_RUNTIME_MS` (default 600000).
 
 **Railway usage cap:** set a hard spending limit ($10–15) on the project so a hung crawl or runaway service can't produce a surprise bill.
 

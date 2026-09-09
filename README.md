@@ -59,7 +59,9 @@ One project: a **PostgreSQL** database + two services from this repo, `web` and
 | Pre-Deploy | `pnpm db:deploy` | — |
 | Start | `pnpm --filter @searchexperience/web start` | `pnpm --filter @searchexperience/worker start` |
 | Cron Schedule | — | `0 8 * * *` |
-| Variables | `DATABASE_URL` (`${{Postgres.DATABASE_URL}}`), `ADMIN_USER`, `ADMIN_PASS`, `NODE_ENV=production` | `DATABASE_URL`, `CRAWL_MAX_RUNTIME_MS`, `CLOSE_AFTER_MISSED_CRAWLS`, `CRAWL_USER_AGENT`, `NODE_ENV=production` |
+| Variables | `DATABASE_URL` (`${{Postgres.DATABASE_URL}}`), `ADMIN_USER`, `ADMIN_PASS`, `NODE_ENV=production` | `DATABASE_URL`, `CRAWL_MAX_RUNTIME_MS`, `CLOSE_AFTER_STALE_HOURS`, `CRAWL_USER_AGENT`, `NODE_ENV=production` |
+
+**Cron cadence:** the crawler is cadence-agnostic — a job closes `CLOSE_AFTER_STALE_HOURS` (default 36) after it was last seen, not after N missed runs, and a run still going is skipped rather than stacked. Anything from twice a day to every ~15 min is safe; sub-hourly just adds request volume to the job sites for little gain. Current schedule: `0 10,22 * * *` (10:00 / 22:00 UTC ≈ 6am / 6pm US Eastern). Railway cron is UTC and does not follow daylight saving.
 
 Set a project **usage cap** ($10–15). Verify with `/<web-url>/api/health` →
 `{"status":"ok","db":"ok"}`.

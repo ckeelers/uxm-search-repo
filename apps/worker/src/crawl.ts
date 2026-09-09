@@ -18,10 +18,16 @@ import { workdayAdapter } from "./adapters/workday";
 import type { Adapter, RawJob } from "./adapters/types";
 import { isBlock } from "./http";
 
-const MAX_RUNTIME_MS = Number(process.env.CRAWL_MAX_RUNTIME_MS ?? 15 * 60 * 1000);
-const CLOSE_AFTER_MISSED_CRAWLS = Number(
-  process.env.CLOSE_AFTER_MISSED_CRAWLS ?? 2,
-);
+// Kept below the shortest sensible cron interval so a hung run always dies
+// before the next one fires.
+const MAX_RUNTIME_MS = Number(process.env.CRAWL_MAX_RUNTIME_MS ?? 10 * 60 * 1000);
+// A missed job is closed once it has gone unseen this long — cadence-independent,
+// so the same rule works whether the cron is twice a day or every 15 minutes.
+// 36h ≈ unseen across ~3 twice-daily crawls, well clear of one flaky run.
+const CLOSE_AFTER_STALE_MS =
+  Number(process.env.CLOSE_AFTER_STALE_HOURS ?? 36) * 60 * 60 * 1000;
+// If a run is still marked in-progress and younger than this, skip this tick.
+const IN_PROGRESS_WINDOW_MS = 12 * 60 * 1000;
 const DELAY_BETWEEN_COMPANIES_MS = 1_000;
 const SALARY_FLOOR = 150_000; // spec: base-band midpoint must be >= this
 
@@ -211,18 +217,24 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
       status: JobStatus.OPEN,
       externalId: { notIn: seenIds },
     },
-    select: { id: true, missedCrawls: true },
+    select: { id: true, missedCrawls: true, lastVerified: true },
   });
 
+  const now = Date.now();
   let closed = 0;
   for (const s of stale) {
-    const missed = s.missedCrawls + 1;
-    const close = missed >= CLOSE_AFTER_MISSED_CRAWLS;
+    // close only once the job has been unseen for CLOSE_AFTER_STALE_MS —
+    // not after N misses, so a fast cron doesn't close jobs prematurely.
+    const close = now - s.lastVerified.getTime() >= CLOSE_AFTER_STALE_MS;
     await prisma.job.update({
       where: { id: s.id },
       data: close
-        ? { missedCrawls: missed, status: JobStatus.CLOSED, closedAt: new Date() }
-        : { missedCrawls: missed },
+        ? {
+            missedCrawls: s.missedCrawls + 1,
+            status: JobStatus.CLOSED,
+            closedAt: new Date(),
+          }
+        : { missedCrawls: s.missedCrawls + 1 },
     });
     if (close) closed++;
   }
@@ -243,6 +255,18 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
 async function main(): Promise<void> {
   const startedAt = Date.now();
   console.log(`[crawl] start ${new Date(startedAt).toISOString()}`);
+
+  // don't stack up if a previous run (fast cron) is still going
+  const inflight = await prisma.crawlRun.findFirst({
+    where: {
+      finishedAt: null,
+      startedAt: { gt: new Date(startedAt - IN_PROGRESS_WINDOW_MS) },
+    },
+  });
+  if (inflight) {
+    console.log("[crawl] a recent run is still in progress — skipping this tick");
+    return;
+  }
 
   const companies = await prisma.company.findMany({
     where: { active: true, excluded: false },
