@@ -6,6 +6,7 @@ import { prisma, Platform, MatchOutcome, Track } from "@searchexperience/core";
 function revalidate() {
   revalidatePath("/admin/companies");
   revalidatePath("/admin/review");
+  revalidatePath("/admin/rejected");
   revalidatePath("/");
 }
 
@@ -64,6 +65,17 @@ export async function deleteCompany(form: FormData): Promise<void> {
   // jobs reference the company (onDelete: Restrict) — clear them first.
   await prisma.job.deleteMany({ where: { companyId: id } });
   await prisma.company.delete({ where: { id } });
+  revalidate();
+}
+
+/** Pull a wrongly-rejected job back into the review queue. */
+export async function reopenToReview(form: FormData): Promise<void> {
+  const jobId = str(form, "jobId");
+  if (!jobId) throw new Error("jobId required");
+  await prisma.job.update({
+    where: { id: jobId },
+    data: { matchOutcome: MatchOutcome.REVIEW_QUEUE, matchReason: "admin-reopened" },
+  });
   revalidate();
 }
 

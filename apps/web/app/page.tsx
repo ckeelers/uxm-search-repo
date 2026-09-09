@@ -115,8 +115,8 @@ export default async function HomePage({
   );
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <header className="mb-6 flex items-start justify-between gap-4">
+    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+      <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">searchexperience</h1>
           <p className="mt-1 text-sm text-neutral-500">
@@ -170,7 +170,7 @@ export default async function HomePage({
             <option value="unknown">Unpublished</option>
           </select>
         </label>
-        <div className="flex items-center gap-4 sm:col-span-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 sm:col-span-2">
           <span className="text-neutral-500">Arrangement</span>
           {cb("onsite", "Onsite", onsite)}
           {cb("hybrid", "Hybrid", hybrid)}

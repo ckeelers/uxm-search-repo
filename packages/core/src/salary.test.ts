@@ -97,4 +97,28 @@ describe("parseCompensation", () => {
     // midpoint < 150k -> pipeline will reject
     expect(mid("Salary range $120,000 - $150,000")).toBe(135000);
   });
+
+  it("more real-world shapes", () => {
+    // trailing "USD"
+    expect(parseCompensation("Base salary: $150,000–$180,000 USD")).toMatchObject({
+      min: 150000,
+      max: 180000,
+    });
+    // hourly single figure on a cue
+    expect(parseCompensation("Pay: $95.00/hour").midpoint).toBe(197600);
+    // mixed currency — pick the USD band
+    expect(
+      parseCompensation(
+        "EU: €100.000 - €150.000. US base salary: $135,000 - $175,000.",
+      ),
+    ).toMatchObject({ min: 135000, max: 175000 });
+    // over the sanity cap -> unknown
+    expect(parseCompensation("Salary: $1,200,000 - $1,500,000").state).toBe("UNKNOWN");
+    // equal bounds
+    expect(parseCompensation("The base salary is $180,000 - $180,000")).toMatchObject({
+      min: 180000,
+      max: 180000,
+      midpoint: 180000,
+    });
+  });
 });

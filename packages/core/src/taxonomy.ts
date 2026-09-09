@@ -75,7 +75,7 @@ const BARE_LEADERSHIP =
 
 /** A short discipline qualifier that, after a comma, belongs in front of the title. */
 const DISCIPLINE_TAIL =
-  /^(ux|ui|ux ui|ui ux|user experience|ux research|user research|ux design|product design|experience design|interaction design|design systems?|design|research)$/;
+  /^(ux|ui|ux ui|ui ux|user experience|ux research|user research|ux design|product design|experience design|interaction design|design systems?|design|research)(\s+(design|research|management))?$/;
 
 export function normalizeTitle(raw: string): string {
   let s = (raw ?? "").toLowerCase();
@@ -111,8 +111,15 @@ function uninvertOrTrimScope(s: string): string {
   const head = s.slice(0, comma).trim();
   const tail = s.slice(comma + 1).trim();
 
-  // "Manager, UX Design" -> "UX Design Manager"
-  if (BARE_LEADERSHIP.test(head)) return `${tail} ${head}`;
+  // strip leading modifiers off the head so "Sr. Manager" still reads as "Manager"
+  const headCore = head
+    .replace(/[^a-z ]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w && !LEADING_MODIFIERS.includes(w))
+    .join(" ");
+
+  // "Manager, UX Design" / "Sr. Manager, User Experience" -> "<tail> Manager"
+  if (BARE_LEADERSHIP.test(headCore)) return `${tail} ${headCore}`;
 
   // "Research Manager, UX" -> "UX Research Manager"
   if (DISCIPLINE_TAIL.test(tail)) return `${tail} ${head}`;

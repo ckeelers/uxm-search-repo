@@ -139,6 +139,19 @@ describe("matchTitle — the spec's headline cases", () => {
     expect(classifyTitle("Design Manager").track).toBe(Track.UX_DESIGN_MGR);
     expect(classifyTitle("Research Manager").track).toBe(Track.UX_RESEARCH_MGR);
   });
+
+  it("handles more real-world title shapes", () => {
+    expect(classifyTitle("Manager of Product Design").outcome).toBe("STAGE1_INCLUDE");
+    expect(classifyTitle("Sr. Manager, User Experience Design").outcome).toBe(
+      "STAGE1_INCLUDE",
+    );
+    expect(classifyTitle("UX Design Manager").outcome).toBe("STAGE1_INCLUDE");
+    // content design is a UX discipline but not in the strong set yet -> review
+    expect(classifyTitle("Content Design Manager").outcome).toBe("REVIEW_QUEUE");
+    // DesignOps leads process/tooling, not a design team -> out of scope
+    expect(classifyTitle("Design Operations Manager").outcome).toBe("REJECTED");
+    expect(classifyTitle("Principal Product Designer").outcome).toBe("REJECTED");
+  });
 });
 
 describe("contentCheck (Stage 2)", () => {

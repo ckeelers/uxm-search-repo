@@ -119,6 +119,27 @@ describe("classifyLocation — real Greenhouse location strings", () => {
     expect(loc("Washington, DC").siteStates).toEqual(["DC"]);
   });
 
+  it("more real-world shapes", () => {
+    // 'or' as a separator
+    const a = loc("New York, NY or Remote");
+    expect(a.siteStates).toEqual(["NY"]);
+    expect(a.remoteUs).toBe(true);
+
+    // non-US remote region
+    expect(loc("Remote - EMEA").isUsBased).toBe(false);
+    expect(loc("Remote (Canada)").isUsBased).toBe(false);
+
+    // "United States (Remote)" -> US remote
+    expect(loc("United States (Remote)")).toMatchObject({
+      isUsBased: true,
+      remoteUs: true,
+      siteStates: [],
+    });
+
+    // "USA, ST, City" (Workday shape)
+    expect(loc("USA, CA, Pleasanton; Flex").siteStates).toEqual(["CA"]);
+  });
+
   it("empty location -> least-restrictive default", () => {
     expect(classifyLocation("", "")).toMatchObject({
       isUsBased: true,

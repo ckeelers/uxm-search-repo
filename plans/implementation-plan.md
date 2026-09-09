@@ -384,12 +384,14 @@ FAANG-minus-Amazon custom adapters (Meta, Apple, Netflix, Google — bespoke car
 
 - **Done when:** ≥40 companies across ≥3 platforms ✓ (50/3), daily auto-crawl, review queue usable.
 
-### M5 — Polish
-- Mobile layout pass; empty / loading / error states
-- Taxonomy-tuning view over `REJECTED` jobs in `/admin`
-- Crawl observability (surface `CrawlRun` errors + summary)
-- README: local setup + "add a company" steps
-- Broaden `packages/core` test coverage
+### M5 — Polish (done 2026-09-08, code; deploy pending)
+- [x] Mobile pass — `px-4 sm:px-6` on every page, header stacks on mobile, arrangement row wraps.
+- [x] `app/loading.tsx` skeleton for the dynamic pages.
+- [x] `/admin/rejected` — every rejected open role grouped by reason family, with counts and a `→ review` action to reopen a false reject. New "Rejected" admin tab.
+- [x] `/admin/crawls` — "Last crawl" summary card (companies, seen/new/closed, errored company slugs) above the run log.
+- [x] `README.md` rewritten — 4 platforms, `railway ssh` flow, per-platform token formats, "adding a company" via `/admin`.
+- [x] Core tests 48 → **51**; expanding coverage caught + fixed a real bug (`Sr. Manager, User Experience Design` was rejected — `uninvertOrTrimScope` now strips leading modifiers off the pre-comma head).
+- [ ] **Chris:** deploy + re-crawl (the taxonomy fix may surface a few more roles).
 - **Done when:** comfortable using it as your daily job search.
 
 ---

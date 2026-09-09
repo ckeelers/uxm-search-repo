@@ -8,74 +8,101 @@ pages. See [`specs/product-spec.md`](specs/product-spec.md) and
 
 ```
 apps/web       Next.js app — search, saved jobs, /admin
-apps/worker    crawl runner — runs on a schedule, writes the job index
+apps/worker    crawl runner — 5 min job on a schedule, writes the job index
 packages/core  shared logic (taxonomy, salary, location) + Prisma client + types
 ```
+
+Job sources: **Greenhouse, Lever, Ashby, Workday** — one adapter per platform in
+`apps/worker/src/adapters/`, all pure JSON APIs. ~57 companies seeded.
 
 ## Prerequisites
 
 - Node 22+ (`.nvmrc` pins 22)
-- pnpm 9 — `npm install -g pnpm@9` if you don't have it
+- pnpm 9 — `npm install -g pnpm@9`
 
 ## Local setup
 
 ```bash
 pnpm install
-cp .env.example .env          # then set DATABASE_URL to a local Postgres
-pnpm db:generate              # generate the Prisma client
-pnpm db:migrate               # create/apply the local database schema
+cp .env.example .env          # set DATABASE_URL to a Postgres you can reach
+pnpm db:generate
+pnpm db:migrate               # create/apply the schema
 pnpm dev:web                  # http://localhost:3000  (health: /api/health)
-pnpm crawl                    # run the worker once
+pnpm crawl                    # run the crawler once
+pnpm test                     # core unit tests
 ```
 
-No local Postgres? The fastest path is a free Railway Postgres (below) — point
-`DATABASE_URL` at it and run `pnpm db:migrate` against it.
+No local Postgres? Point `DATABASE_URL` at your Railway Postgres'
+`DATABASE_PUBLIC_URL` (Railway → Postgres → Variables) and run `pnpm db:migrate`
+against it. A gitignored `packages/core/prisma/.env` with just that one line is
+picked up automatically.
 
 ## Scripts (repo root)
 
 | Command | Does |
 |---|---|
-| `pnpm build` | build every package |
-| `pnpm typecheck` | typecheck every package |
-| `pnpm test` | run `packages/core` unit tests (Vitest) |
-| `pnpm dev:web` / `pnpm dev:worker` | run one app in watch mode |
-| `pnpm crawl` | run the crawl worker once |
+| `pnpm build` / `pnpm typecheck` | all packages |
+| `pnpm test` | `packages/core` unit tests (Vitest) |
+| `pnpm dev:web` / `pnpm dev:worker` | one app in watch mode |
+| `pnpm crawl` / `pnpm --filter @searchexperience/worker seed` | run / seed the crawler |
 | `pnpm db:generate` / `db:migrate` / `db:deploy` / `db:studio` | Prisma |
 
 ## Deploy (Railway)
 
-One Railway project, three parts: a Postgres database and two services from
-this repo.
+One project: a **PostgreSQL** database + two services from this repo, `web` and
+`worker` (connect the same repo twice).
 
-1. **Create the project** and add a **PostgreSQL** database.
-2. **`web` service** — deploy from this repo.
-   - Root directory: repo root
-   - Build: `pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @searchexperience/web build`
-   - Start: `pnpm --filter @searchexperience/web start`
-   - Pre-deploy / release command: `pnpm db:deploy` (applies migrations)
-   - Variables: `DATABASE_URL` (reference the Postgres plugin), `ADMIN_USER`, `ADMIN_PASS`, `NODE_ENV=production`
-3. **`worker` service** — deploy from the same repo.
-   - Root directory: repo root
-   - Build: `pnpm install --frozen-lockfile && pnpm db:generate`
-   - Start: `pnpm --filter @searchexperience/worker start`
-   - **Cron Schedule:** `0 8 * * *`
-   - Variables: `DATABASE_URL`, `CRAWL_MAX_RUNTIME_MS`, `CLOSE_AFTER_MISSED_CRAWLS`, `CRAWL_USER_AGENT`, `NODE_ENV=production`
-4. **Set a usage cap** on the project ($10–15) — plan §5.5.
+| | `web` | `worker` |
+|---|---|---|
+| Root directory | repo root | repo root |
+| Build | `pnpm install --frozen-lockfile && pnpm db:generate && pnpm --filter @searchexperience/web build` | `pnpm install --frozen-lockfile && pnpm db:generate` |
+| Pre-Deploy | `pnpm db:deploy` | — |
+| Start | `pnpm --filter @searchexperience/web start` | `pnpm --filter @searchexperience/worker start` |
+| Cron Schedule | — | `0 8 * * *` |
+| Variables | `DATABASE_URL` (`${{Postgres.DATABASE_URL}}`), `ADMIN_USER`, `ADMIN_PASS`, `NODE_ENV=production` | `DATABASE_URL`, `CRAWL_MAX_RUNTIME_MS`, `CLOSE_AFTER_MISSED_CRAWLS`, `CRAWL_USER_AGENT`, `NODE_ENV=production` |
 
-Verify: open the `web` URL, then `/<web-url>/api/health` should return
+Set a project **usage cap** ($10–15). Verify with `/<web-url>/api/health` →
 `{"status":"ok","db":"ok"}`.
 
-## Seeding and crawling
+## Seeding and crawling in production
 
-The crawler only visits companies in the `Company` table. Populate it once, then
-run a crawl (the cron does this daily; run it by hand the first time):
+The crawler only visits companies in the `Company` table. `worker` is a cron
+service (no persistent container), so run one-offs **inside the `web`
+container**, where the internal `DATABASE_URL` resolves:
 
 ```bash
-# with the Railway CLI, against the deployed database:
-railway run --service worker pnpm --filter @searchexperience/worker seed
-railway run --service worker pnpm --filter @searchexperience/worker crawl
+railway ssh --service <web service name>
+cd /app
+pnpm --filter @searchexperience/worker seed    # idempotent — the 57-company list
+pnpm --filter @searchexperience/worker crawl   # one full pass (~3 min)
+exit
 ```
 
-`seed` is idempotent. After the first `crawl`, open the `web` URL — indexed
-roles appear on the home page.
+After that the nightly cron keeps it fresh. A re-crawl re-classifies every
+stored row (useful after a taxonomy / parser change); the live pages may need a
+refresh to catch up.
 
+## Adding a company
+
+Easiest: **`/admin/companies`** (HTTP basic auth, `ADMIN_USER` / `ADMIN_PASS`) —
+add a row with its platform + board token, then run a crawl.
+
+`platformId` (the "token") by platform:
+
+| Platform | Token | Example |
+|---|---|---|
+| Greenhouse | board token | `stripe` (from `boards.greenhouse.io/stripe`) |
+| Lever | company slug | `spotify` (from `jobs.lever.co/spotify`) |
+| Ashby | board name | `notion` (from `jobs.ashbyhq.com/notion`) |
+| Workday | `<tenant>/<wd>/<site>` | `adobe/wd5/external_experienced` (from `adobe.wd5.myworkdayjobs.com/external_experienced`) |
+
+To seed permanently instead, add it to `apps/worker/src/seed-companies.ts`.
+
+## `/admin`
+
+| Page | For |
+|---|---|
+| `/admin/review` | borderline titles — approve as Design / Research, or reject |
+| `/admin/rejected` | every rejected role grouped by reason — sanity-check the taxonomy; `→ review` reopens a false reject |
+| `/admin/companies` | add / pause / exclude / delete companies |
+| `/admin/crawls` | last crawl summary + per-company run log with errors |
