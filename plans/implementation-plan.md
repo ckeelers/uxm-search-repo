@@ -391,8 +391,10 @@ FAANG-minus-Amazon custom adapters (Meta, Apple, Netflix, Google — bespoke car
 - [x] `/admin/crawls` — "Last crawl" summary card (companies, seen/new/closed, errored company slugs) above the run log.
 - [x] `README.md` rewritten — 4 platforms, `railway ssh` flow, per-platform token formats, "adding a company" via `/admin`.
 - [x] Core tests 48 → **51**; expanding coverage caught + fixed a real bug (`Sr. Manager, User Experience Design` was rejected — `uninvertOrTrimScope` now strips leading modifiers off the pre-comma head).
-- [ ] **Chris:** deploy + re-crawl (the taxonomy fix may surface a few more roles).
+- [x] **Deployed + verified 2026-09-08.**
 - **Done when:** comfortable using it as your daily job search.
+
+**Fix (2026-09-08, code; deploy pending): human verdicts are sticky.** The crawl's update path was recomputing `matchOutcome` every run, so a role rejected in `/admin/review` came back next crawl. Now a job whose `matchReason` is `admin-reject` / `admin-approve` / `admin-reopened` keeps its outcome + track across crawls; everything else (description, salary, location, `lastVerified`) still refreshes.
 
 ---
 

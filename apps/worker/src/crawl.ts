@@ -25,6 +25,10 @@ const CLOSE_AFTER_MISSED_CRAWLS = Number(
 const DELAY_BETWEEN_COMPANIES_MS = 1_000;
 const SALARY_FLOOR = 150_000; // spec: base-band midpoint must be >= this
 
+// a human verdict from /admin — the crawl refreshes everything else about the
+// job but never re-decides its outcome/track.
+const HUMAN_DECISIONS = new Set(["admin-reject", "admin-approve", "admin-reopened"]);
+
 const ADAPTERS: Record<string, Adapter> = {
   GREENHOUSE: greenhouseAdapter,
   LEVER: leverAdapter,
@@ -170,14 +174,18 @@ async function crawlCompany(company: Company): Promise<CompanyResult> {
           externalId: r.externalId,
         },
       },
-      select: { id: true },
+      select: { id: true, matchReason: true },
     });
 
     if (existing) {
+      // don't re-decide a job a human has already ruled on in /admin
+      const locked =
+        existing.matchReason != null && HUMAN_DECISIONS.has(existing.matchReason);
+      const { matchOutcome: _o, matchReason: _r, track: _t, ...rest } = mutable;
       await prisma.job.update({
         where: { id: existing.id },
         data: {
-          ...mutable,
+          ...(locked ? rest : mutable),
           lastVerified: new Date(),
           missedCrawls: 0,
           status: JobStatus.OPEN,
