@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma, Platform, MatchOutcome, Track } from "@searchexperience/core";
 
 function revalidate() {
@@ -17,8 +18,12 @@ function str(form: FormData, key: string): string {
 
 const PLATFORMS = new Set(Object.values(Platform));
 
+/** Send the admin back to the companies page with a banner instead of crashing. */
+function failCompanies(message: string): never {
+  redirect(`/admin/companies?error=${encodeURIComponent(message)}`);
+}
+
 export async function upsertCompany(form: FormData): Promise<void> {
-  const id = str(form, "id");
   const slug = str(form, "slug").toLowerCase();
   const name = str(form, "name");
   const platform = str(form, "platform");
@@ -26,21 +31,35 @@ export async function upsertCompany(form: FormData): Promise<void> {
   const careersUrl = str(form, "careersUrl");
 
   if (!slug || !name || !PLATFORMS.has(platform as Platform)) {
-    throw new Error("slug, name and a valid platform are required");
+    failCompanies("Slug, name, and a valid platform are required.");
   }
 
-  const data = {
-    slug,
-    name,
-    platform: platform as Platform,
-    platformId: platformId || null,
-    careersUrl: careersUrl || `https://example.com/${slug}`,
-  };
-
-  if (id) {
-    await prisma.company.update({ where: { id }, data });
-  } else {
-    await prisma.company.create({ data });
+  let failed = false;
+  try {
+    // keyed by slug, not an id field the "Add a company" form never sends —
+    // re-submitting the same slug updates that row instead of crashing on
+    // the unique-constraint violation a plain create() would throw.
+    await prisma.company.upsert({
+      where: { slug },
+      create: {
+        slug,
+        name,
+        platform: platform as Platform,
+        platformId: platformId || null,
+        careersUrl: careersUrl || `https://example.com/${slug}`,
+      },
+      update: {
+        name,
+        platform: platform as Platform,
+        platformId: platformId || null,
+      },
+    });
+  } catch (e) {
+    console.error("[admin] upsertCompany failed:", e);
+    failed = true;
+  }
+  if (failed) {
+    failCompanies("Could not save that company — check the values and try again.");
   }
   revalidate();
 }
@@ -49,22 +68,32 @@ export async function toggleCompanyFlag(form: FormData): Promise<void> {
   const id = str(form, "id");
   const flag = str(form, "flag");
   if (!id || (flag !== "active" && flag !== "excluded")) {
-    throw new Error("bad toggle");
+    failCompanies("Bad toggle request.");
   }
-  const company = await prisma.company.findUniqueOrThrow({ where: { id } });
-  await prisma.company.update({
-    where: { id },
-    data: { [flag]: !company[flag] },
-  });
+  try {
+    const company = await prisma.company.findUniqueOrThrow({ where: { id } });
+    await prisma.company.update({
+      where: { id },
+      data: { [flag]: !company[flag] },
+    });
+  } catch (e) {
+    console.error("[admin] toggleCompanyFlag failed:", e);
+    failCompanies("That company could not be found — it may have been deleted.");
+  }
   revalidate();
 }
 
 export async function deleteCompany(form: FormData): Promise<void> {
   const id = str(form, "id");
-  if (!id) throw new Error("id required");
-  // jobs reference the company (onDelete: Restrict) — clear them first.
-  await prisma.job.deleteMany({ where: { companyId: id } });
-  await prisma.company.delete({ where: { id } });
+  if (!id) failCompanies("id required");
+  try {
+    // jobs reference the company (onDelete: Restrict) — clear them first.
+    await prisma.job.deleteMany({ where: { companyId: id } });
+    await prisma.company.delete({ where: { id } });
+  } catch (e) {
+    console.error("[admin] deleteCompany failed:", e);
+    failCompanies("Could not delete that company.");
+  }
   revalidate();
 }
 

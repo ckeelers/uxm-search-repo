@@ -6,7 +6,16 @@ import s from "../shared.module.css";
 
 export const dynamic = "force-dynamic";
 
-export default async function CompaniesPage() {
+type SP = Record<string, string | string[] | undefined>;
+
+export default async function CompaniesPage({
+  searchParams,
+}: {
+  searchParams: Promise<SP>;
+}) {
+  const sp = await searchParams;
+  const error = Array.isArray(sp.error) ? sp.error[0] : sp.error;
+
   const companies = await prisma.company.findMany({
     orderBy: [{ platform: "asc" }, { slug: "asc" }],
     include: { _count: { select: { jobs: true } } },
@@ -16,6 +25,8 @@ export default async function CompaniesPage() {
 
   return (
     <>
+      {error && <p className={s.errorBanner}>{error}</p>}
+
       <p className={s.intro}>
         {companies.length} companies · {active} actively crawled
       </p>
