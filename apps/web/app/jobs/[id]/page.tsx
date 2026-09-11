@@ -4,6 +4,7 @@ import { prisma, JobStatus } from "@searchexperience/core";
 import { saveJob, removeSaved } from "../../actions";
 import { OWNER_ID } from "../../../lib/owner";
 import { SubmitButton } from "../../_components/submit-button";
+import { RefreshingForm } from "../../_components/refreshing-form";
 import { SiteHeader } from "../../_components/site-header";
 import { ViewJobLink } from "../../_components/view-job-link";
 import { monogram } from "../../../lib/monogram";
@@ -104,12 +105,12 @@ export default async function JobPage({
           <ViewJobLink jobId={job.id} href={job.sourceUrl} className={styles.viewBtn}>
             View job on {job.company.name} site ↗
           </ViewJobLink>
-          <form action={saved ? removeSaved : saveJob}>
+          <RefreshingForm action={saved ? removeSaved : saveJob}>
             <input type="hidden" name="jobId" value={job.id} />
             <SubmitButton className={styles.saveBtn}>
               {saved ? "★ Saved" : "☆ Save"}
             </SubmitButton>
-          </form>
+          </RefreshingForm>
         </div>
 
         <article className={styles.description}>{job.descriptionText}</article>

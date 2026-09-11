@@ -4,6 +4,7 @@ import type { Prisma } from "@searchexperience/core";
 import { saveJob, removeSaved } from "./actions";
 import { OWNER_ID } from "../lib/owner";
 import { SubmitButton } from "./_components/submit-button";
+import { RefreshingForm } from "./_components/refreshing-form";
 import { SiteHeader } from "./_components/site-header";
 import { ViewJobLink } from "./_components/view-job-link";
 import { monogram } from "../lib/monogram";
@@ -296,12 +297,12 @@ export default async function HomePage({
                           {fmtDate(job.firstSeen)}
                         </p>
                         <div className={styles.footActions}>
-                          <form action={isSaved ? removeSaved : saveJob}>
+                          <RefreshingForm action={isSaved ? removeSaved : saveJob}>
                             <input type="hidden" name="jobId" value={job.id} />
                             <SubmitButton className={styles.saveBtn}>
                               {isSaved ? "★ Saved" : "☆ Save"}
                             </SubmitButton>
-                          </form>
+                          </RefreshingForm>
                           <ViewJobLink
                             jobId={job.id}
                             href={job.sourceUrl}

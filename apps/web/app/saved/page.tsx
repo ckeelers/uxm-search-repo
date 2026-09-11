@@ -3,6 +3,7 @@ import { prisma, JobStatus, SavedStatus } from "@searchexperience/core";
 import { removeSaved, setSavedStatus } from "../actions";
 import { OWNER_ID } from "../../lib/owner";
 import { SubmitButton } from "../_components/submit-button";
+import { RefreshingForm } from "../_components/refreshing-form";
 import { SiteHeader } from "../_components/site-header";
 import { ViewJobLink } from "../_components/view-job-link";
 import { monogram } from "../../lib/monogram";
@@ -108,26 +109,26 @@ export default async function SavedPage({
                       View job ↗
                     </ViewJobLink>
                     {tab === SavedStatus.SAVED ? (
-                      <form action={setSavedStatus}>
+                      <RefreshingForm action={setSavedStatus}>
                         <input type="hidden" name="jobId" value={job.id} />
                         <input type="hidden" name="status" value={SavedStatus.APPLIED} />
                         <SubmitButton className={styles.linkMuted}>
                           → Applied
                         </SubmitButton>
-                      </form>
+                      </RefreshingForm>
                     ) : (
-                      <form action={setSavedStatus}>
+                      <RefreshingForm action={setSavedStatus}>
                         <input type="hidden" name="jobId" value={job.id} />
                         <input type="hidden" name="status" value={SavedStatus.SAVED} />
                         <SubmitButton className={styles.linkMuted}>
                           ↩ Restore to saved
                         </SubmitButton>
-                      </form>
+                      </RefreshingForm>
                     )}
-                    <form action={removeSaved}>
+                    <RefreshingForm action={removeSaved}>
                       <input type="hidden" name="jobId" value={job.id} />
                       <SubmitButton className={styles.linkDanger}>Remove</SubmitButton>
-                    </form>
+                    </RefreshingForm>
                   </div>
 
                   <NoteEditor jobId={job.id} note={notes} />

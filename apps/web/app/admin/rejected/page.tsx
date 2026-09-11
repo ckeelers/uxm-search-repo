@@ -1,6 +1,7 @@
 import { prisma, JobStatus, MatchOutcome } from "@searchexperience/core";
 import { reopenToReview } from "../actions";
 import { SubmitButton } from "../../_components/submit-button";
+import { RefreshingForm } from "../../_components/refreshing-form";
 import s from "../shared.module.css";
 
 export const dynamic = "force-dynamic";
@@ -86,12 +87,12 @@ export default async function RejectedPage({
                     <span className={s.company}>· {j.company.name}</span>{" "}
                     <span className={s.rejReason}>— {j.matchReason}</span>
                   </span>
-                  <form action={reopenToReview} className="shrink-0">
+                  <RefreshingForm action={reopenToReview} className="shrink-0">
                     <input type="hidden" name="jobId" value={j.id} />
                     <SubmitButton className={s.link} pendingText="…">
                       → review
                     </SubmitButton>
-                  </form>
+                  </RefreshingForm>
                 </li>
               ))}
               {!focus && list.length > 8 && (

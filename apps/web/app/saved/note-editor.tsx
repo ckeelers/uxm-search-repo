@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { setSavedNotes } from "../actions";
 import styles from "./note-editor.module.css";
 
@@ -26,6 +27,7 @@ export function NoteEditor({
 }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
 
   if (editing) {
     return (
@@ -36,6 +38,7 @@ export function NoteEditor({
           try {
             await setSavedNotes(fd);
             setEditing(false);
+            router.refresh();
           } finally {
             setSaving(false);
           }

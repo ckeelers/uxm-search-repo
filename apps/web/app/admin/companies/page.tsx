@@ -1,6 +1,7 @@
 import { prisma, Platform } from "@searchexperience/core";
 import { upsertCompany, toggleCompanyFlag, deleteCompany } from "../actions";
 import { SubmitButton } from "../../_components/submit-button";
+import { RefreshingForm } from "../../_components/refreshing-form";
 import s from "../shared.module.css";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ export default async function CompaniesPage() {
         {companies.length} companies · {active} actively crawled
       </p>
 
-      <form action={upsertCompany} className={s.form}>
+      <RefreshingForm action={upsertCompany} className={s.form}>
         <div className={s.formTitle}>Add a company</div>
         <input name="slug" placeholder="slug (unique)" required className={s.input} />
         <input name="name" placeholder="Display name" required className={s.input} />
@@ -35,7 +36,7 @@ export default async function CompaniesPage() {
           className={s.inputWide}
         />
         <SubmitButton className={s.addBtn}>Add</SubmitButton>
-      </form>
+      </RefreshingForm>
 
       <div className={s.card2}>
         <table className={s.table}>
@@ -77,12 +78,12 @@ export default async function CompaniesPage() {
                       flag="excluded"
                       label={c.excluded ? "Un-exclude" : "Exclude"}
                     />
-                    <form action={deleteCompany}>
+                    <RefreshingForm action={deleteCompany}>
                       <input type="hidden" name="id" value={c.id} />
                       <SubmitButton className="text-red-500 hover:underline">
                         Delete
                       </SubmitButton>
-                    </form>
+                    </RefreshingForm>
                   </div>
                 </td>
               </tr>
@@ -96,10 +97,10 @@ export default async function CompaniesPage() {
 
 function ToggleBtn({ id, flag, label }: { id: string; flag: string; label: string }) {
   return (
-    <form action={toggleCompanyFlag}>
+    <RefreshingForm action={toggleCompanyFlag}>
       <input type="hidden" name="id" value={id} />
       <input type="hidden" name="flag" value={flag} />
       <SubmitButton className="text-neutral-600 hover:underline">{label}</SubmitButton>
-    </form>
+    </RefreshingForm>
   );
 }

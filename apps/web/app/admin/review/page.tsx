@@ -1,6 +1,7 @@
 import { prisma, JobStatus, MatchOutcome } from "@searchexperience/core";
 import { reviewDecision } from "../actions";
 import { SubmitButton } from "../../_components/submit-button";
+import { RefreshingForm } from "../../_components/refreshing-form";
 import { monogram } from "../../../lib/monogram";
 import s from "../shared.module.css";
 
@@ -61,11 +62,11 @@ export default async function ReviewPage() {
                     ["reject", "✕ Reject", s.btnReject],
                   ] as const
                 ).map(([decision, label, cls]) => (
-                  <form key={decision} action={reviewDecision}>
+                  <RefreshingForm key={decision} action={reviewDecision}>
                     <input type="hidden" name="jobId" value={job.id} />
                     <input type="hidden" name="decision" value={decision} />
                     <SubmitButton className={cls}>{label}</SubmitButton>
-                  </form>
+                  </RefreshingForm>
                 ))}
               </div>
             </div>
