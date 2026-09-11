@@ -133,7 +133,7 @@
   @apply flex flex-wrap items-center gap-2;
 }
 .newBadge {
-  @apply rounded bg-blue-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white;
+  @apply rounded bg-red-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white;
 }
 .cardTitle {
   @apply font-semibold leading-snug hover:underline;

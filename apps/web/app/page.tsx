@@ -98,7 +98,11 @@ export default async function HomePage({
         select: { jobId: true },
       }),
     ]);
-    jobs = rows;
+    // new (unviewed) jobs float to the top; Array#sort is stable, so within
+    // each group the existing datePosted/firstSeen order is untouched.
+    jobs = rows
+      .slice()
+      .sort((a, b) => Number(a.viewedAt != null) - Number(b.viewedAt != null));
     savedIds = new Set(saved.map((s) => s.jobId));
     savedCount = saved.length;
   } catch {
