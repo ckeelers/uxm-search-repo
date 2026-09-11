@@ -105,6 +105,7 @@ model Job {
   datePosted      DateTime? // from the posting, if stated
   firstSeen       DateTime     @default(now())
   lastVerified    DateTime     @default(now())
+  viewedAt        DateTime? // set the first time the owner saves / opens / applies to this job — drives the "New!" badge
   status          JobStatus    @default(OPEN)
   missedCrawls    Int          @default(0)
   closedAt        DateTime?

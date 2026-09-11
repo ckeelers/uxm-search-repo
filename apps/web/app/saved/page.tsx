@@ -4,6 +4,7 @@ import { removeSaved, setSavedStatus } from "../actions";
 import { OWNER_ID } from "../../lib/owner";
 import { SubmitButton } from "../_components/submit-button";
 import { SiteHeader } from "../_components/site-header";
+import { ViewJobLink } from "../_components/view-job-link";
 import { monogram } from "../../lib/monogram";
 import { NoteEditor } from "./note-editor";
 import styles from "./page.module.css";
@@ -103,14 +104,9 @@ export default async function SavedPage({
                   </p>
 
                   <div className={styles.actions}>
-                    <a
-                      href={job.sourceUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={styles.link}
-                    >
+                    <ViewJobLink jobId={job.id} href={job.sourceUrl} className={styles.link}>
                       View job ↗
-                    </a>
+                    </ViewJobLink>
                     {tab === SavedStatus.SAVED ? (
                       <form action={setSavedStatus}>
                         <input type="hidden" name="jobId" value={job.id} />

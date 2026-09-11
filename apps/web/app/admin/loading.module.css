@@ -1,0 +1,6 @@
+.wrap {
+  @apply flex items-center justify-center gap-3 py-20 text-sm text-neutral-500;
+}
+.spinner {
+  @apply h-4 w-4 animate-spin rounded-full border-2 border-neutral-300 border-t-neutral-900;
+}

@@ -27,7 +27,10 @@ export function SiteHeader({ savedCount }: { savedCount?: number }) {
             <Bookmark />
             Saved{savedCount ? ` (${savedCount})` : ""}
           </Link>
-          <Link href="/admin" className={styles.pill}>
+          {/* prefetch=false: /admin is Basic-Auth protected — prefetching it
+              would fire the browser's login prompt just from this link being
+              on the page, before the user has clicked it. */}
+          <Link href="/admin" prefetch={false} className={styles.pill}>
             Admin
           </Link>
         </nav>

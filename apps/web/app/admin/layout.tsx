@@ -29,8 +29,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className={styles.body}>
         <nav className={styles.tabs}>
+          {/* prefetch=false: without it, hovering/viewing one tab silently
+              fetches the others in the background, so clicking never shows
+              the loading state and the tabs feel instant either way. */}
           {TABS.map((t) => (
-            <Link key={t.href} href={t.href} className={styles.tab}>
+            <Link key={t.href} href={t.href} prefetch={false} className={styles.tab}>
               {t.label}
             </Link>
           ))}

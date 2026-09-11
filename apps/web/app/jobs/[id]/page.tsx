@@ -5,6 +5,7 @@ import { saveJob, removeSaved } from "../../actions";
 import { OWNER_ID } from "../../../lib/owner";
 import { SubmitButton } from "../../_components/submit-button";
 import { SiteHeader } from "../../_components/site-header";
+import { ViewJobLink } from "../../_components/view-job-link";
 import { monogram } from "../../../lib/monogram";
 import styles from "./page.module.css";
 
@@ -38,6 +39,15 @@ export default async function JobPage({
   ]);
   if (!job) notFound();
 
+  // capture before marking viewed below, so this visit still shows the badge
+  const isNew = job.viewedAt == null;
+  if (isNew) {
+    await prisma.job.update({
+      where: { id: job.id },
+      data: { viewedAt: new Date() },
+    }).catch(() => {});
+  }
+
   const salary = band(job.salaryMin, job.salaryMax);
 
   return (
@@ -53,9 +63,7 @@ export default async function JobPage({
           <div className={styles.avatar}>{monogram(job.company.name)}</div>
           <div className={styles.titleCol}>
             <h1 className={styles.title}>
-              {job.firstSeen.getTime() === job.lastVerified.getTime() && (
-                <span className={styles.newBadge}>New!</span>
-              )}
+              {isNew && <span className={styles.newBadge}>New!</span>}
               {job.rawTitle}
             </h1>
             <p className={styles.company}>{job.company.name}</p>
@@ -93,14 +101,9 @@ export default async function JobPage({
         </p>
 
         <div className={styles.cta}>
-          <a
-            href={job.sourceUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={styles.viewBtn}
-          >
+          <ViewJobLink jobId={job.id} href={job.sourceUrl} className={styles.viewBtn}>
             View job on {job.company.name} site ↗
-          </a>
+          </ViewJobLink>
           <form action={saved ? removeSaved : saveJob}>
             <input type="hidden" name="jobId" value={job.id} />
             <SubmitButton className={styles.saveBtn}>

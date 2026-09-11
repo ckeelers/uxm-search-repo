@@ -5,6 +5,7 @@ import { saveJob, removeSaved } from "./actions";
 import { OWNER_ID } from "../lib/owner";
 import { SubmitButton } from "./_components/submit-button";
 import { SiteHeader } from "./_components/site-header";
+import { ViewJobLink } from "./_components/view-job-link";
 import { monogram } from "../lib/monogram";
 import styles from "./page.module.css";
 
@@ -112,8 +113,7 @@ export default async function HomePage({
         )
       : null;
 
-  const isNew = (j: { firstSeen: Date; lastVerified: Date }) =>
-    j.firstSeen.getTime() === j.lastVerified.getTime();
+  const isNew = (j: { viewedAt: Date | null }) => j.viewedAt == null;
 
   const arrToggle = (name: string, label: string, checked: boolean, dot: string) => (
     <label className={styles.toggle}>
@@ -238,6 +238,7 @@ export default async function HomePage({
                               )}
                               <Link
                                 href={`/jobs/${job.id}`}
+                                prefetch={false}
                                 className={styles.cardTitle}
                               >
                                 {job.rawTitle}
@@ -297,14 +298,13 @@ export default async function HomePage({
                               {isSaved ? "★ Saved" : "☆ Save"}
                             </SubmitButton>
                           </form>
-                          <a
+                          <ViewJobLink
+                            jobId={job.id}
                             href={job.sourceUrl}
-                            target="_blank"
-                            rel="noreferrer"
                             className={styles.viewBtn}
                           >
                             View job ↗
-                          </a>
+                          </ViewJobLink>
                         </div>
                       </div>
                     </li>

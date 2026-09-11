@@ -22,6 +22,24 @@ export async function saveJob(form: FormData): Promise<void> {
     create: { jobId: id, userId: OWNER_ID },
     update: {}, // already saved — no-op
   });
+  await markViewed(id);
+  revalidate();
+}
+
+/**
+ * Marks a job as interacted-with (saved / opened / clicked through), which
+ * clears the "New!" badge for good — it never comes back on its own.
+ * Called directly from client components (not via a <form>), so it takes a
+ * plain jobId rather than FormData.
+ */
+export async function markViewed(id: string): Promise<void> {
+  if (!id) return;
+  try {
+    await prisma.job.update({ where: { id }, data: { viewedAt: new Date() } });
+  } catch {
+    // job may already be gone — nothing to do
+    return;
+  }
   revalidate();
 }
 
